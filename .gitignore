@@ -8,3 +8,4 @@ dist/
 ANNOUNCEMENT_0.86.md
 .python-version
 *.orphan
+__pycache__/
