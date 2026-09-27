@@ -94,6 +94,8 @@ This compiles the GUI and backend with `swiftc` for Apple Silicon and macOS 26, 
 - `./build.sh clean` removes `dist/`.
 - `./test.sh` runs Swift unit tests, backend CLI integration tests, and a build smoke test. The smoke test runs `build.sh bundle`, which builds `dist/` without installing anything.
 
+After every change to the source, run `./build.sh` so that `~/Applications/GAMMA Setup Tool.app` is a copy of the current source. `./test.sh` does not install.
+
 Developers can set `GAMMA_ENGINE_ARTIFACTS_DIR` in the app's environment to prefill the local archive field with the most recently modified `.tar.xz` in that directory.
 
 ### Source Layout
