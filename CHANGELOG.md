@@ -34,6 +34,8 @@
 - The setup checklist follows the order the steps actually run in, the progress bar
   follows the steps, and the last lines of setup output are no longer lost when setup
   fails.
+- New apps start with DXMT's shader IR release (`d3d11.releaseShaderIR`) off; DXMT turns it
+  on when it is not set. Blit encoder merging stays off unless enabled in the app.
 
 - The wizard opens on a welcome page where you select `ModOrganizer.exe` (or another
   executable) and then name the app on the same page. The name is filled in from the
