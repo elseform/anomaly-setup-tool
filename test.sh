@@ -27,6 +27,9 @@ swiftc \
   -o "$SWIFT_TEST_BINARY"
 "$SWIFT_TEST_BINARY"
 
+printf '\n==> Running build smoke test\n'
+"$ROOT_DIR/build.sh" bundle >/dev/null
+
 printf '\n==> Building Swift setup engine for CLI tests\n'
 swiftc \
   -target arm64-apple-macosx15.0 \
@@ -39,7 +42,6 @@ printf '\n==> Running Swift setup engine CLI tests\n'
 "$BUILD_DIR/gamma-setup-engine" --help >/dev/null
 bash "$ROOT_DIR/tests/shell/gamma_setup_engine_tests.sh" "$ROOT_DIR" "$BUILD_DIR/gamma-setup-engine"
 
-printf '\n==> Running build smoke test\n'
-"$ROOT_DIR/build.sh" bundle >/dev/null
+bash "$ROOT_DIR/tests/launcher/run.sh"
 
 printf '\nAll tests passed.\n'

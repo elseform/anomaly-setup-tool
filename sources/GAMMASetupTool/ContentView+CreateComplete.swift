@@ -120,7 +120,7 @@ struct CreatePage: View {
             (2, "Windows environment", "Preparing the Windows environment"),
             (3, "Drives", "Connecting your GAMMA folder"),
             (4, "Windows components", "Installing Windows components"),
-            (5, "App", "Building the app and its Configurator"),
+            (5, "App", "Building the app and its launcher"),
             (6, "Finishing", "Finishing up")
         ]
     }
@@ -214,7 +214,6 @@ struct CompletePage: View {
                     }
                 }
                 .font(.callout)
-                .help("If the Configurator alias is missing, open Configurator.app in the app's Contents/Resources folder.")
             }
 
             WizardCard {
@@ -249,17 +248,16 @@ struct CompletePage: View {
         .frame(maxWidth: Layout.completeMaxWidth, alignment: .topLeading)
     }
 
-    /// The Configurator alias is "<app name> Configurator", next to the app
-    /// (interactive_setup.py).
+    /// The generated wrapper owns both settings and launching.
     private var nextSteps: [(number: Int, text: LocalizedStringKey)] {
         let launch: LocalizedStringKey = model.configuration.usesCustomLaunchExecutable
-            ? "It starts **\(model.selectedLaunchExecutableLabel)**."
-            : "It opens Mod Organizer. Press **Run** there to start the game."
+            ? "Press **Launch** to start **\(model.selectedLaunchExecutableLabel)**."
+            : "Press **Launch** to open Mod Organizer, then **Run** there to start the game."
         return [
             (1, "Open **\(model.outputAppName)** from ~/Applications. Show in Finder below takes you there."),
             (2, launch),
             (3, "The first start can take longer while shaders are prepared."),
-            (4, "To change graphics or launch options, open **\(model.outputAppName) Configurator**, next to the app."),
+            (4, "Reopen **\(model.outputAppName)** whenever you want to change settings or choose another executable."),
         ]
     }
 }

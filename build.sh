@@ -72,6 +72,8 @@ swiftc \
 
 cp "$INTERMEDIATE_BINARY" "$BINARY"
 
+bash "$ROOT_DIR/scripts/build-launcher.sh" "$RESOURCES_DIR/launcher"
+
 if [[ "$MODE" != "run" ]] || is_stale "$INTERMEDIATE_ENGINE_BINARY" "$ROOT_DIR"/sources/GAMMASetupCore/*.swift "$ROOT_DIR"/sources/GAMMASetupEngine/main.swift; then
   swiftc \
     -O \
@@ -85,7 +87,16 @@ fi
 cp "$INTERMEDIATE_ENGINE_BINARY" "$ENGINE_BINARY"
 chmod +x "$ENGINE_BINARY"
 
-cp "$SOURCE_RESOURCES_DIR/Anomaly.icns" "$RESOURCES_DIR/GAMMASetupTool.icns"
+# The app icon is an Icon Composer document; actool compiles it into
+# Assets.car plus a SetupTool.icns fallback (full Xcode required, as for the
+# launcher icon above).
+if ! xcrun actool "$ROOT_DIR/sources/GAMMASetupTool/SetupTool.icon" \
+  --compile "$RESOURCES_DIR" --platform macosx --minimum-deployment-target 15.0 \
+  --app-icon SetupTool --output-partial-info-plist "$INTERMEDIATES_DIR/setup-tool-icon-info.plist" \
+  --output-format human-readable-text >/dev/null; then
+  echo 'Could not compile SetupTool.icon. Full Xcode with Icon Composer support is required.' >&2
+  exit 1
+fi
 if [[ -d "$SOURCE_RESOURCES_DIR/usvfs" ]]; then
   rm -rf "$RESOURCES_DIR/usvfs"
   cp -R "$SOURCE_RESOURCES_DIR/usvfs" "$RESOURCES_DIR/usvfs"
@@ -107,7 +118,9 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
   <key>CFBundleExecutable</key>
   <string>GAMMA Setup Tool</string>
   <key>CFBundleIconFile</key>
-  <string>GAMMASetupTool</string>
+  <string>SetupTool</string>
+  <key>CFBundleIconName</key>
+  <string>SetupTool</string>
   <key>CFBundleIdentifier</key>
   <string>com.elseform.gamma-setup-tool</string>
   <key>CFBundleInfoDictionaryVersion</key>

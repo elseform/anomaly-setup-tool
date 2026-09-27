@@ -1,0 +1,35 @@
+import SwiftUI
+import AppKit
+
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+    let model = ConfiguratorModel()
+    var didHandOff = false
+    lazy var launcher = LaunchController { [weak self] in
+        self?.didHandOff = true
+        NSApplication.shared.terminate(nil)
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        didHandOff || !model.canEdit || model.persist() ? .terminateNow : .terminateCancel
+    }
+
+    func windowShouldClose(_ sender: NSWindow) -> Bool {
+        !model.canEdit || model.persist()
+    }
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+}
+
+@main
+struct ConfiguratorApp: App {
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
+    var body: some Scene {
+        Window(Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "GAMMA", id: "launcher") {
+            ConfiguratorView(model: appDelegate.model, launcher: appDelegate.launcher)
+                .background(WindowCloseGuard(delegate: appDelegate))
+        }
+        .windowResizability(.contentSize)
+    }
+}

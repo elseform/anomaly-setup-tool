@@ -11,11 +11,10 @@ replaceable:
   ~/Library/Application Support/<App>/prefix    Wine prefix
   ~/Library/Application Support/<App>/app.env   user-editable settings
 
-Standalone — does not call other scripts in this repo. Stdlib-only: no
+Requires prebuilt --launcher-resources from gamma-setup-tool. Stdlib-only: no
 third-party Python dependencies, so this still works from just a released
 archive on a machine that has never seen this repo (only `python3` itself,
-plus the same external tools the previous bash version needed: wine, tar,
-codesign, osascript, lsregister).
+plus Wine, tar, codesign and lsregister).
 
 Every prompt below has a matching flag (see --help). Any flag given skips
 its prompt; anything left unset still prompts interactively — fully
@@ -29,6 +28,8 @@ import argparse
 import importlib.util
 import json
 import os
+import plistlib
+import shlex
 import shutil
 import subprocess
 import sys
@@ -292,7 +293,7 @@ set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 ENGINE_DIR="$APP_DIR/Contents/Resources/engine"
-APP_SUPPORT="@@APP_SUPPORT@@"
+APP_SUPPORT=@@APP_SUPPORT@@
 CONFIG_FILE="$APP_SUPPORT/app.env"
 
 export WINEPREFIX="$APP_SUPPORT/prefix"
@@ -361,10 +362,22 @@ if [[ "$GAMMA_RETINA_MODE" == "Y" && -n "${GAMMA_RETINA_LOGPIXELS:-}" ]]; then
     >/dev/null 2>&1 || true
 fi
 
-EXE_PATH="${EXE_PATH:-@@EXE_WIN_PATH@@}"
-EXE_RUN_DIR="${EXE_RUN_DIR:-@@EXE_RUN_DIR@@}"
+DEFAULT_EXE_PATH=@@EXE_WIN_PATH@@
+DEFAULT_EXE_RUN_DIR=@@EXE_RUN_DIR@@
+EXE_PATH="${EXE_PATH:-$DEFAULT_EXE_PATH}"
+EXE_RUN_DIR="${EXE_RUN_DIR:-$DEFAULT_EXE_RUN_DIR}"
 
 cd "$EXE_RUN_DIR"
+
+# Game-only defaults must not be sent to Mod Organizer. Explicit CLI
+# arguments remain available for callers intentionally controlling MO2.
+GAMMA_TARGET_NAME="${EXE_PATH##*\\\\}"
+GAMMA_TARGET_NAME="${GAMMA_TARGET_NAME##*/}"
+shopt -s nocasematch
+if [[ "$GAMMA_TARGET_NAME" == "ModOrganizer.exe" ]]; then
+  DEFAULT_GAME_ARGS=""
+fi
+shopt -u nocasematch
 
 # bash 3.2 on macOS chokes on "${@}" under set -u when empty
 if [[ $# -eq 0 && -n "${DEFAULT_GAME_ARGS:-}" ]]; then
@@ -381,8 +394,8 @@ set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 ENGINE_DIR="$APP_DIR/Contents/Resources/engine"
-APP_SUPPORT="@@APP_SUPPORT@@"
-export WINEPREFIX="@@WINEPREFIX@@"
+APP_SUPPORT=@@APP_SUPPORT@@
+export WINEPREFIX=@@WINEPREFIX@@
 
 if [[ ! -x "$ENGINE_DIR/bin/wine" || ! -x "$ENGINE_DIR/bin/wineserver" ]]; then
   echo "error: bundled Wine engine is incomplete: $ENGINE_DIR" >&2
@@ -456,9 +469,9 @@ set -euo pipefail
 
 APP_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 ENGINE_DIR="$APP_DIR/Contents/Resources/engine"
-APP_SUPPORT="@@APP_SUPPORT@@"
+APP_SUPPORT=@@APP_SUPPORT@@
 CONFIG_FILE="$APP_SUPPORT/app.env"
-export WINEPREFIX="@@WINEPREFIX@@"
+export WINEPREFIX=@@WINEPREFIX@@
 
 if [[ ! -x "$ENGINE_DIR/bin/wine" || ! -f "$ENGINE_DIR/lib/wine/x86_64-windows/winecfg.exe" ]]; then
   echo "error: bundled Wine engine has no winecfg: $ENGINE_DIR" >&2
@@ -523,7 +536,7 @@ def install_redistributables(engine_dir: Path, system32: Path, args) -> list:
 def render_template(template: str, **tokens: str) -> str:
     rendered = template
     for key, value in tokens.items():
-        rendered = rendered.replace(f"@@{key}@@", str(value))
+        rendered = rendered.replace(f"@@{key}@@", shlex.quote(str(value)))
     return rendered
 
 
@@ -542,7 +555,8 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--force-exe", action="store_true",
                          help="Skip the game-exe existence check (equivalent to answering y).")
     parser.add_argument("--skip-finder-alias", action="store_true",
-                         help="Don't create the '<App> Configurator' Finder alias.")
+                         help="Deprecated no-op; wrappers no longer need a Configurator alias.")
+    parser.add_argument("--launcher-resources", help="Prebuilt launcher resource directory from gamma-setup-tool (required).")
     parser.add_argument("--archive", help="Path to the engine archive (.tar.xz).")
     parser.add_argument("--app-name", help="Name for the .app bundle (without .app).")
     parser.add_argument("--app-parent", help="Directory to place the .app in.")
@@ -573,7 +587,36 @@ def symlink_force(link: Path, target) -> None:
     link.symlink_to(target)
 
 
+def validate_launcher_resources(directory: Path) -> dict:
+    for name in ("GAMMALauncher", "Gamma.icns", "Assets.car", "icon-info.plist"):
+        file = directory / name
+        if not file.is_file() or file.stat().st_size == 0:
+            raise SetupError(f"Launcher resource missing or empty: {file}. Rebuild gamma-setup-tool.")
+    if not os.access(directory / "GAMMALauncher", os.X_OK):
+        raise SetupError("Bundled GAMMALauncher is not executable.")
+    try:
+        with (directory / "icon-info.plist").open("rb") as handle:
+            metadata = plistlib.load(handle)
+    except Exception as exc:
+        raise SetupError(f"Invalid launcher icon metadata: {exc}") from exc
+    if not isinstance(metadata, dict) or any(metadata.get(key) != "Gamma" for key in ("CFBundleIconFile", "CFBundleIconName")):
+        raise SetupError("Launcher icon metadata must name Gamma.")
+    return {key: metadata[key] for key in ("CFBundleIconFile", "CFBundleIconName")}
+
+
+def install_launcher_resources(directory: Path, app_path: Path) -> dict:
+    metadata = validate_launcher_resources(directory)
+    shutil.copy2(directory / "GAMMALauncher", app_path / "Contents/MacOS/GAMMALauncher")
+    for name in ("Gamma.icns", "Assets.car"):
+        shutil.copy2(directory / name, app_path / "Contents/Resources" / name)
+    return metadata
+
+
 def run_setup(args: argparse.Namespace) -> None:
+    if not args.launcher_resources:
+        raise SetupError("--launcher-resources is required; use the prebuilt resources from gamma-setup-tool.")
+    launcher_resources = Path(args.launcher_resources).expanduser()
+    validate_launcher_resources(launcher_resources)
     log("==========================================================")
     log("GAMMA Wine Engine — Interactive Setup")
     log("==========================================================")
@@ -638,7 +681,7 @@ def run_setup(args: argparse.Namespace) -> None:
     state_file = app_support / "configurator-state.json"
 
     # Everything this script writes from here on lives under app_path or
-    # app_support (engine, prefix, launcher, Configurator.app copy). app_path
+    # app_support (engine, prefix, launcher, native launcher). app_path
     # is guaranteed fresh (its existence was checked above), so a failure can
     # remove it wholesale. app_support is not: it survives deleting the .app,
     # and an earlier wrapper of the same name may have left its prefix and
@@ -670,7 +713,7 @@ def run_setup(args: argparse.Namespace) -> None:
     (app_path / "Contents/Resources").mkdir(parents=True, exist_ok=True)
     engine_dir.mkdir(parents=True, exist_ok=True)
     app_support.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(SCRIPT_DIR / "Anomaly.icns", app_path / "Contents/Resources/Anomaly.icns")
+    icon_metadata = install_launcher_resources(launcher_resources, app_path)
 
     extract_archive(artifact_path, engine_dir)
 
@@ -766,61 +809,42 @@ def run_setup(args: argparse.Namespace) -> None:
     stage_started("wrapper", "Step 3: Writing .app bundle metadata & launcher...")
 
     bundle_id_suffix = app_name.lower().replace(" ", "-")
-    info_plist = f"""<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-\t<key>CFBundleDevelopmentRegion</key>
-\t<string>English</string>
-\t<key>CFBundleDisplayName</key>
-\t<string>{app_name}</string>
-\t<key>CFBundleExecutable</key>
-\t<string>launcher</string>
-\t<key>CFBundleIconFile</key>
-\t<string>Anomaly.icns</string>
-\t<key>CFBundleIdentifier</key>
-\t<string>com.gamma.wine-engine.{bundle_id_suffix}</string>
-\t<key>CFBundleInfoDictionaryVersion</key>
-\t<string>1.0</string>
-\t<key>CFBundleName</key>
-\t<string>{app_name}</string>
-\t<key>CFBundlePackageType</key>
-\t<string>APPL</string>
-\t<key>CFBundleShortVersionString</key>
-\t<string>{engine_version}</string>
-\t<key>CFBundleVersion</key>
-\t<string>{engine_version}</string>
-\t<key>LSMinimumSystemVersion</key>
-\t<string>15.0</string>
-\t<key>NSHighResolutionCapable</key>
-\t<true/>
-\t<key>NSSupportsAutomaticGraphicsSwitching</key>
-\t<true/>
-\t<key>NSPrincipalClass</key>
-\t<string>NSApplication</string>
-</dict>
-</plist>
-"""
-    (app_path / "Contents/Info.plist").write_text(info_plist)
+    info_plist = {
+        "CFBundleDevelopmentRegion": "en",
+        "CFBundleDisplayName": app_name,
+        "CFBundleExecutable": "GAMMALauncher",
+        "CFBundleIdentifier": f"com.gamma.wine-engine.{bundle_id_suffix}",
+        "CFBundleInfoDictionaryVersion": "6.0",
+        "CFBundleName": app_name,
+        "CFBundlePackageType": "APPL",
+        "CFBundleShortVersionString": engine_version,
+        "CFBundleVersion": engine_version,
+        "LSMinimumSystemVersion": "15.0",
+        "NSHighResolutionCapable": True,
+        "NSSupportsAutomaticGraphicsSwitching": True,
+        "NSPrincipalClass": "NSApplication",
+        **icon_metadata,
+    }
+    with (app_path / "Contents/Info.plist").open("wb") as handle:
+        plistlib.dump(info_plist, handle)
 
     # Settings live outside the bundle: editing them must not break the
     # signature. The seed is the always-on DXMT vars plus the GAMMA defaults
     # below; every other optional var stays
-    # absent (Configurator's default = disabled). No inline comments:
-    # Configurator is the documented interface (the engine's
-    # runtime/configurator-gui/Sources/Schema.swift), and on first launch it
+    # absent (launcher's default = disabled). No inline comments:
+    # wrapper UI is the documented interface (sources/GAMMALauncher/Schema.swift), and on first launch it
     # seeds its own state from exactly this file, so what is written here *is*
     # the default. Keep var names/quoting in sync with that schema by hand —
     # there is no automated check. DXMT_CONFIG uses the packed
-    # "key=value;" form the Configurator parses and re-serialises.
+    # "key=value;" form the launcher parses and re-serialises.
     if config_file.is_file():
         log(f"  Keeping existing settings: {config_file}")
     else:
         lines = [
-            "# Edit via Contents/Resources/Configurator.app — see it for descriptions and valid ranges.",
+            "# Edit via the wrapper app — see it for descriptions and valid ranges.",
             "",
-            f"export EXE_PATH='{exe_win_path}'",
-            f"export EXE_RUN_DIR='{exe_run_dir}'",
+            f"export EXE_PATH={shlex.quote(exe_win_path)}",
+            f"export EXE_RUN_DIR={shlex.quote(str(exe_run_dir))}",
             "",
             "export GAMMA_GRAPHICS_BACKEND=dxmt",
             "export WINEMSYNC=1",
@@ -855,46 +879,20 @@ def run_setup(args: argparse.Namespace) -> None:
         _WINECFG_LAUNCHER_TEMPLATE, APP_SUPPORT=app_support, WINEPREFIX=wineprefix,
     ))
 
-    # Native SwiftUI GUI over app.env: renders the schema (Schema.swift,
-    # ported from the former runtime/configurator/configurator.py) as
-    # toggles/fields grouped by section, keyed off a sidecar
-    # configurator-state.json (holds every var's value + enabled state
-    # regardless of current backend, so switching backends or re-enabling a
-    # var restores exactly what was typed before). app.env itself is pure
-    # generated output — no inline comments, no lines for the backend
-    # that isn't selected. Built by pack-engine-artifact.sh
-    # (scripts/build-configurator.sh) and shipped prebuilt inside the
-    # engine artifact (share/gamma/Configurator.app) — this script stays
-    # standalone/archive-only and never builds anything from source. It's a
-    # real nested .app bundle (not a loose binary) so it opens as a GUI
-    # window, not Terminal, when launched directly or via the "<app name>
-    # Configurator" alias (named to sort next to the main .app in Finder).
-    configurator_src = engine_dir / "share/gamma/Configurator.app"
-    if not configurator_src.is_dir():
-        raise SetupError("Configurator.app is missing (expected in the engine artifact)")
-    configurator_dst = app_path / "Contents/Resources/Configurator.app"
-    shutil.copytree(configurator_src, configurator_dst)
-    # The Configurator reads the wrapper-level configurator-paths.json, which
-    # survives Configurator.app being replaced. The in-bundle paths.json is
-    # kept for Configurator builds that predate it.
+    # Wrapper-owned locations remain outside its signed bundle.
     configurator_paths = json.dumps({
         "configFile": str(config_file),
         "stateFile": str(state_file),
-        # Tells the Configurator not to offer D3DMetal settings; the
-        # engine carries no D3DMetal payload.
-        "dxmtOnly": True,
+        "winePrefix": str(wineprefix),
     })
     (app_path / "Contents/Resources/configurator-paths.json").write_text(configurator_paths)
-    configurator_resources = configurator_dst / "Contents/Resources"
-    configurator_resources.mkdir(parents=True, exist_ok=True)
-    (configurator_resources / "paths.json").write_text(configurator_paths)
 
     for path in (launcher_path, winetricks_path, winecfg_path):
         os.chmod(path, 0o755)
     stage_finished("wrapper")
 
     # 5. Ad-hoc sign the bundle. The engine payload (and the
-    #    Configurator.app nested inside it) is already signed by
+    #    legacy components inside it) is already signed by
     #    pack-engine-artifact.sh; this re-signs the wrapper scripts plus the
     #    whole bundle envelope so the paths.json we just dropped in doesn't
     #    invalidate anything upstream.
@@ -908,7 +906,7 @@ def run_setup(args: argparse.Namespace) -> None:
     codesign_soft(launcher_path)
     codesign_soft(winetricks_path)
     codesign_soft(winecfg_path)
-    codesign_soft(configurator_dst)
+    codesign_soft(app_path / "Contents/MacOS/GAMMALauncher")
     if codesign_soft(app_path):
         log(f"  Ad-hoc signed {app_path}")
     else:
@@ -920,31 +918,6 @@ def run_setup(args: argparse.Namespace) -> None:
          "-f", str(app_path)],
         check=False, quiet=True,
     )
-
-    alias_name = f"{app_name} Configurator"
-    alias_path = app_parent / f"{alias_name}.app"
-    log(f'Step 6: Creating "{alias_name}" alias...')
-    if args.skip_finder_alias:
-        log("  Skipping Finder alias creation (--skip-finder-alias)")
-    elif alias_path.exists():
-        log(f"  Skipping: {alias_path} already exists")
-    else:
-        # Guarded, unlike the rest of this script's happy path: this is the
-        # one step that can fail for an environment reason outside our
-        # control (the calling process lacking Automation/Apple-Events
-        # permission to Finder), after the app bundle and Wine prefix
-        # already exist — a failure here must not abort or misrepresent an
-        # otherwise-successful setup.
-        osa_script = (
-            'tell application "Finder"\n'
-            f'  set aliasFile to make new alias file at POSIX file "{app_parent}" '
-            f'to (POSIX file "{configurator_dst}" as alias)\n'
-            f'  set name of aliasFile to "{alias_name}"\n'
-            "end tell"
-        )
-        returncode, output = run(["osascript", "-e", osa_script], check=False, quiet=True)
-        if returncode != 0:
-            err(f"  Warning: could not create Finder alias (Automation/Apple Events permission?): {output}")
 
     artifact_event(app_path)
 
@@ -960,8 +933,7 @@ def run_setup(args: argparse.Namespace) -> None:
     log(f'Or CLI:      "{app_path}/Contents/MacOS/launcher" -dbg -nointro')
     log(f'Winetricks:  "{app_path}/Contents/MacOS/winetricks" [verb ...]')
     log(f'WineCfg:     "{app_path}/Contents/MacOS/winecfg"')
-    log(f'Configurator: double-click "{alias_name}" next to the app in {app_parent}')
-    log(f'              or open "{configurator_dst}"')
+    log("Open the app to change settings, choose an executable, or press Launch.")
     log("==========================================================")
     stage_finished("finalize")
 

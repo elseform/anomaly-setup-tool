@@ -9,9 +9,15 @@ let package = Package(
     ],
     products: [
         .executable(name: "GAMMA Setup Tool", targets: ["GAMMASetupTool"]),
-        .executable(name: "gamma-setup-engine", targets: ["GAMMASetupEngine"])
+        .executable(name: "gamma-setup-engine", targets: ["GAMMASetupEngine"]),
+        .executable(name: "GAMMALauncher", targets: ["GAMMALauncher"])
     ],
     targets: [
+        .executableTarget(
+            name: "GAMMALauncher",
+            path: "sources/GAMMALauncher",
+            exclude: ["Resources"]
+        ),
         .target(
             name: "GAMMASetupCore",
             path: "sources/GAMMASetupCore"
@@ -20,19 +26,15 @@ let package = Package(
             name: "GAMMASetupTool",
             dependencies: ["GAMMASetupCore"],
             path: "sources/GAMMASetupTool",
-            // wine-engine/ carries its own Anomaly.icns alongside
-            // interactive_setup.py (the script resolves it by literal path
-            // next to itself, not via Bundle.module) — same basename as the
-            // top-level app icon Resources/Anomaly.icns, so .process()
-            // (which flattens all of Resources into one namespace) rejects
-            // it as a duplicate. It doesn't need a SwiftPM resource rule of
-            // its own either: WineEngineSetup.locateScript() finds it by a
-            // literal filesystem path relative to the running executable
+            // wine-engine/ holds interactive_setup.py, which needs no
+            // SwiftPM resource rule: WineEngineSetup.locateScript() finds it
+            // by a literal filesystem path relative to the running executable
             // (Contents/Resources/wine-engine for the build.sh-built app,
             // sources/GAMMASetupTool/Resources/wine-engine for `swift run`),
             // never through Bundle.module — build.sh already copies the
             // whole directory into the built app independently of SwiftPM.
-            exclude: ["Resources/wine-engine"],
+            // SetupTool.icon is compiled by build.sh with actool.
+            exclude: ["Resources/wine-engine", "SetupTool.icon"],
             resources: [
                 .process("Resources")
             ]
