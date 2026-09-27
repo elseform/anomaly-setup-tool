@@ -856,7 +856,8 @@ def run_setup(args: argparse.Namespace) -> None:
             "",
             "export DXMT_METALFX_SPATIAL_SWAPCHAIN=0",
             "export DXMT_ENABLE_NVEXT=1",
-            'export DXMT_CONFIG="d3d11.displaySync=true;d3d11.sampleNaNToZero=true;"',
+            # releaseShaderIR is on in DXMT unless set; new apps turn it off.
+            'export DXMT_CONFIG="d3d11.displaySync=true;d3d11.sampleNaNToZero=true;d3d11.releaseShaderIR=false;"',
         ]
         config_file.write_text("\n".join(lines) + "\n")
         log(f"  Wrote settings: {config_file}")
