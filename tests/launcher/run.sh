@@ -2,7 +2,7 @@
 set -euo pipefail
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 mkdir -p "$ROOT_DIR/dist/tests"
-swiftc -parse-as-library -target arm64-apple-macosx15.0 \
+swiftc -parse-as-library -target arm64-apple-macosx26.0 \
   "$ROOT_DIR/sources/GAMMALauncher/Schema.swift" \
   "$ROOT_DIR/sources/GAMMALauncher/EnvFile.swift" \
   "$ROOT_DIR/sources/GAMMALauncher/PathsConfig.swift" \

@@ -10,7 +10,7 @@
   Winetricks itself; the engine archive carries the graphics backend and a pinned list of
   the Visual C++ and DirectX files it needs, which are downloaded from Microsoft's own
   installers during setup and cached.
-- Requires an Apple Silicon Mac running macOS 15 or newer, as do the wrappers it creates.
+- Requires an Apple Silicon Mac running macOS 26 or newer, as do the wrappers it creates.
 - `Save setup log` now writes a log to `~/Library/Logs/gamma-setup-tool/`.
 - The graphics backend is DXMT. D3DMetal is no longer bundled, and the renderer,
   display-resolution, and drive-mapping options are gone with the pipeline that used

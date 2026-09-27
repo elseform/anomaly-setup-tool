@@ -8,11 +8,11 @@ if ! xcrun --find actool >/dev/null 2>&1; then
   exit 1
 fi
 mkdir -p "$OUTPUT_DIR"
-swiftc -parse-as-library -O -target arm64-apple-macosx15.0 \
+swiftc -parse-as-library -O -target arm64-apple-macosx26.0 \
   -framework SwiftUI -framework AppKit \
   "$ROOT_DIR"/sources/GAMMALauncher/*.swift -o "$OUTPUT_DIR/GAMMALauncher"
 if ! xcrun actool "$ROOT_DIR/sources/GAMMALauncher/Resources/Gamma.icon" \
-  --compile "$OUTPUT_DIR" --platform macosx --minimum-deployment-target 15.0 \
+  --compile "$OUTPUT_DIR" --platform macosx --minimum-deployment-target 26.0 \
   --app-icon Gamma --output-partial-info-plist "$OUTPUT_DIR/icon-info.plist" \
   --output-format human-readable-text; then
   echo 'Could not compile Gamma.icon. Full Xcode with Icon Composer support is required.' >&2

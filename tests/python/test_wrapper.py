@@ -69,7 +69,7 @@ class WrapperTests(unittest.TestCase):
         self.assertEqual(info["CFBundleExecutable"], "GAMMALauncher")
         self.assertEqual(info["CFBundleIconName"], "Gamma")
         self.assertEqual(info["CFBundleIconFile"], "Gamma")
-        self.assertEqual(info["LSMinimumSystemVersion"], "15.0")
+        self.assertEqual(info["LSMinimumSystemVersion"], "26.0")
         self.assertFalse((app / "Contents/Resources/Configurator.app").exists())
         self.assertEqual(len(list(app.parent.iterdir())), 1)
         for name in ("Gamma.icns", "Assets.car"):

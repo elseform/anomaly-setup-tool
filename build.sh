@@ -62,7 +62,7 @@ mkdir -p "$MACOS_DIR" "$RESOURCES_DIR" "$MODULE_CACHE_DIR" "$INTERMEDIATES_DIR"
 swiftc \
   -parse-as-library \
   -O \
-  -target arm64-apple-macosx15.0 \
+  -target arm64-apple-macosx26.0 \
   -module-cache-path "$MODULE_CACHE_DIR" \
   -framework SwiftUI \
   -framework AppKit \
@@ -77,7 +77,7 @@ bash "$ROOT_DIR/scripts/build-launcher.sh" "$RESOURCES_DIR/launcher"
 if [[ "$MODE" != "run" ]] || is_stale "$INTERMEDIATE_ENGINE_BINARY" "$ROOT_DIR"/sources/GAMMASetupCore/*.swift "$ROOT_DIR"/sources/GAMMASetupEngine/main.swift; then
   swiftc \
     -O \
-    -target arm64-apple-macosx15.0 \
+    -target arm64-apple-macosx26.0 \
     -module-cache-path "$MODULE_CACHE_DIR" \
     "$ROOT_DIR"/sources/GAMMASetupCore/*.swift \
     "$ROOT_DIR"/sources/GAMMASetupEngine/main.swift \
@@ -91,7 +91,7 @@ chmod +x "$ENGINE_BINARY"
 # Assets.car plus a SetupTool.icns fallback (full Xcode required, as for the
 # launcher icon above).
 if ! xcrun actool "$ROOT_DIR/sources/GAMMASetupTool/SetupTool.icon" \
-  --compile "$RESOURCES_DIR" --platform macosx --minimum-deployment-target 15.0 \
+  --compile "$RESOURCES_DIR" --platform macosx --minimum-deployment-target 26.0 \
   --app-icon SetupTool --output-partial-info-plist "$INTERMEDIATES_DIR/setup-tool-icon-info.plist" \
   --output-format human-readable-text >/dev/null; then
   echo 'Could not compile SetupTool.icon. Full Xcode with Icon Composer support is required.' >&2
@@ -134,7 +134,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
   <key>CFBundleVersion</key>
   <string>APP_VERSION_PLACEHOLDER</string>
   <key>LSMinimumSystemVersion</key>
-  <string>15.0</string>
+  <string>26.0</string>
   <key>NSHighResolutionCapable</key>
   <true/>
 </dict>

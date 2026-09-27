@@ -818,7 +818,7 @@ def run_setup(args: argparse.Namespace) -> None:
         "CFBundlePackageType": "APPL",
         "CFBundleShortVersionString": engine_version,
         "CFBundleVersion": engine_version,
-        "LSMinimumSystemVersion": "15.0",
+        "LSMinimumSystemVersion": "26.0",
         "NSHighResolutionCapable": True,
         "NSSupportsAutomaticGraphicsSwitching": True,
         "NSPrincipalClass": "NSApplication",
