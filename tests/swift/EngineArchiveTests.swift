@@ -38,6 +38,7 @@ final class EngineArchiveTests {
     }
 
     func testParseBuildCounterFromCurrentAndLegacyNames() {
+        XCTAssertEqual(EngineVersionParser.parseBuildCounter(fromName: "CX26-W11-GAMMA-19.tar.xz"), 19)
         XCTAssertEqual(EngineVersionParser.parseBuildCounter(fromName: "CX26W11-GAMMA-DXMT-14.tar.xz"), 14)
         XCTAssertEqual(EngineVersionParser.parseBuildCounter(fromName: "CX26W11-Gamma086-4.tar.xz"), 4)
         XCTAssertEqual(EngineVersionParser.parseBuildCounter(fromName: "engine-cx26.3-w11-gamma087-14"), 14)
@@ -96,10 +97,10 @@ final class EngineArchiveTests {
         // tag form; a later build under the new form must win.
         let releases = [
             makeRelease(tag: "engine-cx26.3-w11-gamma087-15", archiveName: "CX26W11-GAMMA-DXMT-17.tar.xz"),
-            makeRelease(tag: "engine-cx26-w11-gamma-19", archiveName: "CX26W11-GAMMA-DXMT-19.tar.xz"),
+            makeRelease(tag: "engine-cx26-w11-gamma-19", archiveName: "CX26-W11-GAMMA-19.tar.xz"),
         ]
         let resolved = try EngineReleaseResolver.newestEngineRelease(in: releases)
-        XCTAssertEqual(resolved.archiveName, "CX26W11-GAMMA-DXMT-19.tar.xz")
+        XCTAssertEqual(resolved.archiveName, "CX26-W11-GAMMA-19.tar.xz")
     }
 
     func testIgnoresReleasesWithoutTheEngineTagPrefix() throws {

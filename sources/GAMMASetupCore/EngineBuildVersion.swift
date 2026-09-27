@@ -42,7 +42,8 @@ public enum EngineVersionParser {
     }
 
     /// The trailing `-<N>` of an archive name or release tag, with or without
-    /// a compression suffix: `CX26W11-GAMMA-DXMT-14.tar.zst`,
+    /// a compression suffix: `CX26-W11-GAMMA-19.tar.xz`,
+    /// `CX26W11-GAMMA-DXMT-14.tar.zst`,
     /// `CX26W11Gamma086-4.tar.xz`, `engine-cx26-w11-gamma-19`.
     public static func parseBuildCounter(fromName name: String) -> Int? {
         var stem = name
