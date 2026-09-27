@@ -91,9 +91,11 @@ public final class WineEngineSetup {
         }
         reporter.stageFinished(.dependencies)
 
+        let launcherResources = try locateLauncherResources()
         var arguments: [String] = [
             scriptURL.path,
             "--json",
+            "--launcher-resources", launcherResources.path,
             "--archive", archiveURL.path,
             "--app-name", request.appName,
             "--app-parent", (request.appParent as NSString).expandingTildeInPath,
@@ -170,6 +172,17 @@ public final class WineEngineSetup {
     }
 
     // MARK: - Resource/archive resolution
+
+    private func locateLauncherResources() throws -> URL {
+        var candidates = [scriptRoot.appendingPathComponent("launcher")]
+        if let devRepoRoot {
+            candidates.append(devRepoRoot.appendingPathComponent("dist/GAMMA Setup Tool.app/Contents/Resources/launcher"))
+        }
+        for candidate in candidates where fileManager.isExecutableFile(atPath: candidate.appendingPathComponent("GAMMALauncher").path) {
+            return candidate
+        }
+        throw WineEngineSetupError.message("Prebuilt launcher resources not found. Run ./build.sh bundle before using the development CLI.")
+    }
 
     private func locateScript() throws -> URL {
         var candidates = [scriptRoot.appendingPathComponent("wine-engine/interactive_setup.py")]

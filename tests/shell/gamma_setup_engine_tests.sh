@@ -63,7 +63,7 @@ write_request() {
   cat >"$file" <<JSON
 {
   "archivePath" : "$archive_path",
-  "appName" : "stalker-gamma",
+  "appName" : "gamma-cli-${TMP_ROOT##*/}",
   "appParent" : "$TMP_ROOT/apps",
   "gammaRoot" : "$TMP_ROOT/stage/GAMMA",
   "mo2Path" : "$mo2_path",
@@ -150,9 +150,18 @@ expect_failure "mo2 outside gammaRoot" "$TMP_ROOT/outside.out" "$TMP_ROOT/outsid
   -- create-wine-engine --request-file "$TMP_ROOT/outside.json"
 assert_contains "$TMP_ROOT/outside.err" "is not inside gammaRoot"
 
+printf '==> CLI forwards packaged launcher resources to the wrapper script\n'
+mkdir -p "$TMP_ROOT/stage/GAMMA"
+touch "$TMP_ROOT/stage/GAMMA/ModOrganizer.exe"
+write_request "$TMP_ROOT/reached-script.json" "$TMP_ROOT/present.tar.xz" \
+  "$TMP_ROOT/stage/GAMMA/ModOrganizer.exe"
+expect_failure "empty engine content" "$TMP_ROOT/reached-script.out" "$TMP_ROOT/reached-script.err" \
+  -- create-wine-engine --request-file "$TMP_ROOT/reached-script.json"
+assert_contains "$TMP_ROOT/reached-script.err" "wine binary missing after extraction"
+
 printf '==> No wrapper was created on any failure path\n'
-if [ -e "$TMP_ROOT/apps" ]; then
-  fail "appParent was created despite every run failing"
+if [ -d "$TMP_ROOT/apps" ] && [ -n "$(find "$TMP_ROOT/apps" -mindepth 1 -print -quit)" ]; then
+  fail "partial wrapper remains after failure"
 fi
 
 printf 'All CLI integration tests passed.\n'

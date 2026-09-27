@@ -21,7 +21,7 @@ Extract the downloaded setup-tool archive and open `GAMMA Setup Tool.app`, or [b
 2. The app name is filled in from the selected executable (`ModOrganizer` for `ModOrganizer.exe`), with `-2`, `-3`, and so on added if an app of that name already exists in `~/Applications`. Change it if you like, then click **Continue**.
 3. On **Options**, the engine is downloaded automatically; expand **Use a local engine file** to choose a local `.tar.xz` archive instead. Optionally expand **Windows components** to see which Microsoft runtime files are already present or choose a folder containing downloaded copies. **Advanced** holds the drive mappings and **Save a setup log**; leave the log enabled for troubleshooting.
 4. Click **Create app**.
-5. Launch the created app from Finder. Use the adjacent `<app name> Configurator` alias to change game and graphics settings, including launch arguments.
+5. Open the created app from Finder. Adjust settings or choose another Windows executable, then press **Launch**. The settings window quits after handing off to the launch process. With Mod Organizer selected, press **Run** there to start the game.
 
 Setup checks the selected executable exists; it does not validate the contents or health of the G.A.M.M.A. installation.
 
@@ -53,12 +53,17 @@ Each wrapper has its own Wine prefix and settings outside the app bundle:
 
 ```text
 ~/Applications/<app name>.app
-~/Applications/<app name> Configurator
 ~/Library/Application Support/<app name>/prefix/
 ~/Library/Application Support/<app name>/app.env
 ```
 
-Setup seeds the wrapper's defaults, with no default launch arguments. Change settings through its Configurator. If the Finder alias could not be created, open `Contents/Resources/Configurator.app` inside the wrapper.
+Setup seeds defaults with no launch arguments. The wrapper saves settings automatically, commits pending edits before Launch or closing, and remains open if saving fails. **Reset to Defaults** preserves the selected executable and working directory.
+
+The executable picker accepts any readable local `.exe`, using the existing `G:` mapping where possible and `Z:` otherwise. Choosing `ModOrganizer.exe` disables game launch arguments without deleting them; these defaults are not passed to Mod Organizer. Wine and graphics settings still apply. Configure game arguments in Mod Organizer itself. Changing the target does not modify drive mappings, install runtime files, or update USVFS.
+
+Launch output goes to `~/Library/Logs/<app name>/launcher.log`. The native UI quits after creating the launcher process; later Wine or game failures are recorded in that log. The CLI helper at `Contents/MacOS/launcher` remains available, including explicit argument forwarding.
+
+New wrappers use the authored `Gamma.icon` artwork. Both modern appearance assets and a macOS 15 `.icns` fallback are packaged. Existing installed wrappers are not modified.
 
 With **Save setup log** enabled, setup events are written to:
 
@@ -77,13 +82,13 @@ For failed setup, use the detailed log and the GAMMA Discord link in the app.
 
 ## Build and Test
 
-Building requires Apple's Command Line Tools or Xcode. From the repository root:
+Building requires full Xcode with Icon Composer-capable `actool`, selected through `xcode-select`; Command Line Tools alone cannot compile the app's `SetupTool.icon` or the wrapper's `Gamma.icon`. From the repository root:
 
 ```sh
 ./build.sh
 ```
 
-This compiles the GUI and backend with `swiftc` for Apple Silicon and macOS 15, builds and ad-hoc signs `dist/GAMMA Setup Tool.app`, then replaces `~/Applications/GAMMA Setup Tool.app` with that build. No Xcode project or sibling engine checkout is required to build the setup tool.
+This compiles the GUI and backend with `swiftc` for Apple Silicon and macOS 15, builds and ad-hoc signs `dist/GAMMA Setup Tool.app`, then replaces `~/Applications/GAMMA Setup Tool.app` with that build. No Xcode project or sibling engine checkout is required. The build also compiles the native wrapper UI and icon; end users need no compiler or Xcode.
 
 - `./build.sh run` builds and runs the GUI from `dist/` without installing it.
 - `./build.sh clean` removes `dist/`.
@@ -95,10 +100,26 @@ Developers can set `GAMMA_ENGINE_ARTIFACTS_DIR` in the app's environment to pref
 
 | Path | Responsibility |
 | --- | --- |
-| `sources/GAMMASetupTool/` | SwiftUI wizard, setup state, request construction, and progress display. |
+| `sources/GAMMASetupTool/` | SwiftUI wizard, setup state, request construction, progress display, and the app's `SetupTool.icon`. |
+| `sources/GAMMALauncher/` | Native wrapper settings, target picker, launch handoff, and authored Gamma icon. |
 | `sources/GAMMASetupCore/` | Shared models, engine release resolution, checksum verification, wrapper pipeline, and USVFS updates. |
 | `sources/GAMMASetupEngine/` | `gamma-setup-engine` CLI backend, called by the GUI through `create-wine-engine`. |
 | `sources/GAMMASetupTool/Resources/wine-engine/interactive_setup.py` | Canonical wrapper-creation script, bundled by `build.sh`. |
 | `tests/` | Swift unit tests and shell CLI integration tests. |
 
-`Package.swift` defines both executable products. `build.sh` assembles the distributable app bundle and its backend and resources.
+`Package.swift` defines the wizard, setup backend, and `GAMMALauncher` executable products. `build.sh` assembles the distributable app bundle and its backend and resources.
+
+### Launcher resources and engine compatibility
+
+`build.sh bundle` creates `dist/GAMMA Setup Tool.app/Contents/Resources/launcher/`
+with `GAMMALauncher`, `Gamma.icns`, `Assets.car`, and `icon-info.plist`.
+The setup backend passes this directory to `interactive_setup.py` through
+`--launcher-resources`; direct script callers must supply it too. Missing or
+invalid resources fail before wrapper or prefix changes. Run the bundle build
+before using the development CLI from SwiftPM.
+
+The UI and icon come from setup-tool, not the engine archive. Engine archives
+with or without the former `share/gamma/Configurator.app` are accepted, subject
+to the existing runtime requirements. Older setup-tool builds still require that
+former archive layout; ship updated setup-tool support before publishing engines
+without Configurator. No engine-version gate has been added.
