@@ -39,6 +39,7 @@ let schema: [SchemaEntry] = [
     SchemaEntry(key: "DXMT_METALFX_SPATIAL_SWAPCHAIN", kind: .bool, alwaysOn: true, quoted: false, defaultValue: "0"),
     SchemaEntry(key: "DXMT_ENABLE_NVEXT", kind: .bool, alwaysOn: true, quoted: false, defaultValue: "1"),
     SchemaEntry(key: "DXMT_REORDER_BLITS", kind: .bool, alwaysOn: false, quoted: false, defaultValue: "0"),
+    SchemaEntry(key: "DXMT_FRAME_LIMITER", kind: .bool, alwaysOn: false, quoted: false, defaultValue: "0"),
 
     SchemaEntry(key: "DXMT_SHADER_CACHE", kind: .text, alwaysOn: false, quoted: false, defaultValue: "1"),
     SchemaEntry(key: "DXMT_SHADER_CACHE_PATH", kind: .text, alwaysOn: false, quoted: false, defaultValue: ""),
@@ -117,6 +118,7 @@ let friendlyLabels: [String: String] = [
     "DXMT_METALFX_SPATIAL_SWAPCHAIN": "MetalFX Upscaling",
     "DXMT_ENABLE_NVEXT": "DLSS Support",
     "DXMT_REORDER_BLITS": "Blit Encoder Merging",
+    "DXMT_FRAME_LIMITER": "Frame Limiter",
     "DXMT_LOG_LEVEL": "Log Level",
     "DXMT_LOG_PATH": "Log File Path",
     "DXMT_SHADER_CACHE": "Shader Cache",
@@ -154,6 +156,7 @@ let friendlyDescriptions: [String: String] = [
     "DXMT_METALFX_SPATIAL_SWAPCHAIN": "Upscales the final image with Apple MetalFX.",
     "DXMT_ENABLE_NVEXT": "Needed for the game's DLSS options.",
     "DXMT_REORDER_BLITS": "Groups independent copy and upload work to reduce encoder and render-pass splits.",
+    "DXMT_FRAME_LIMITER": "Paces the game itself, not only the display, to Preferred Max Frame Rate, or to half the display's refresh rate when that is off. Game timing and input then follow the same steady rhythm as the screen.",
     "DXMT_LOG_LEVEL": "How much DXMT writes to its log.",
     "DXMT_LOG_PATH": "Folder for DXMT log files. \"none\" writes no log files.",
     "DXMT_SHADER_CACHE": "Set to 0 to turn off DXMT's shader cache.",
@@ -163,7 +166,7 @@ let friendlyDescriptions: [String: String] = [
     "DXMT_CONFIG_FILE": "Path of a dxmt.conf file to read DXMT options from.",
 
     "d3d11.maxFeatureLevel": "Highest DirectX 11 feature level reported to the game.",
-    "d3d11.preferredMaxFrameRate": "Frame rate cap paced by Metal. Use a factor of your display's refresh rate, like 30, 60 or 120.",
+    "d3d11.preferredMaxFrameRate": "Frame rate cap paced by Metal. Use a factor of your display's refresh rate, like 30, 60 or 120. Also the Frame Limiter's target.",
     "d3d11.displaySync": "Syncs frames to the display. Auto follows the game's own V-Sync setting.",
     "d3d11.metalSpatialUpscaleFactor": "Output size multiplier, above 1.0. For example, 1.33 turns 1080p into 1440p.",
     "d3d11.ignoreMapFlagNoWait": "Workaround for games that mishandle a D3D11 no-wait map flag.",
@@ -200,6 +203,8 @@ struct SettingGroup {
 let mainGroups: [SettingGroup] = [
     SettingGroup(title: "Display & Performance", settings: [
         .dxmt("d3d11.displaySync"),
+        .dxmt("d3d11.preferredMaxFrameRate"),
+        .env("DXMT_FRAME_LIMITER"),
         .env("DXMT_ENABLE_NVEXT"),
         .env("DXMT_METALFX_SPATIAL_SWAPCHAIN"),
         .dxmt("d3d11.metalSpatialUpscaleFactor"),
@@ -223,7 +228,6 @@ let advancedGroups: [SettingGroup] = [
     SettingGroup(title: "Display", settings: [
         .env("GAMMA_RETINA_MODE"),
         .env("GAMMA_RETINA_LOGPIXELS"),
-        .dxmt("d3d11.preferredMaxFrameRate"),
     ]),
     SettingGroup(title: "Compatibility", settings: [
         .env("WINEMSYNC"),
