@@ -129,9 +129,8 @@ public enum EngineReleaseResolver {
             throw EngineReleaseResolverError.malformedRelease(release.tagName)
         }
         let version = EngineBuildVersion(
-            crossover: labelParts.crossover,
+            crossoverMajor: labelParts.crossoverMajor,
             wineMajor: labelParts.wineMajor,
-            gamma: labelParts.gamma,
             build: counter
         )
         return ResolvedEngineRelease(
