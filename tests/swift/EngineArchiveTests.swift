@@ -6,38 +6,31 @@ import Foundation
 final class EngineArchiveTests {
     // MARK: - EngineBuildVersion
 
-    func testComparatorOrdersByCrossoverThenWineThenGammaThenBuild() {
-        let base = EngineBuildVersion(crossover: [26, 3, 0], wineMajor: 11, gamma: 87, build: 10)
-        XCTAssertTrue(base < EngineBuildVersion(crossover: [26, 3, 0], wineMajor: 11, gamma: 87, build: 11))
-        XCTAssertTrue(base < EngineBuildVersion(crossover: [26, 3, 0], wineMajor: 11, gamma: 88, build: 1))
-        XCTAssertTrue(base < EngineBuildVersion(crossover: [26, 3, 0], wineMajor: 12, gamma: 1, build: 1))
-        XCTAssertTrue(base < EngineBuildVersion(crossover: [27, 0, 0], wineMajor: 1, gamma: 1, build: 1))
-        XCTAssertFalse(base < EngineBuildVersion(crossover: [26, 3, 0], wineMajor: 11, gamma: 87, build: 9))
-    }
-
-    func testComparatorTreatsShortAndLongCrossoverFormsAsEqual() {
-        // engineId's "26.3" and versionLabel's "26.3.0" must compare equal.
-        let short = EngineBuildVersion(crossover: [26, 3], wineMajor: 11, gamma: 87, build: 14)
-        let long = EngineBuildVersion(crossover: [26, 3, 0], wineMajor: 11, gamma: 87, build: 14)
-        XCTAssertTrue(short == long)
-        XCTAssertFalse(short < long)
-        XCTAssertFalse(long < short)
+    func testComparatorOrdersByCrossoverThenWineThenBuild() {
+        let base = EngineBuildVersion(crossoverMajor: 26, wineMajor: 11, build: 10)
+        XCTAssertTrue(base < EngineBuildVersion(crossoverMajor: 26, wineMajor: 11, build: 11))
+        XCTAssertTrue(base < EngineBuildVersion(crossoverMajor: 26, wineMajor: 12, build: 1))
+        XCTAssertTrue(base < EngineBuildVersion(crossoverMajor: 27, wineMajor: 1, build: 1))
+        XCTAssertFalse(base < EngineBuildVersion(crossoverMajor: 26, wineMajor: 11, build: 9))
+        XCTAssertTrue(base == EngineBuildVersion(crossoverMajor: 26, wineMajor: 11, build: 10))
     }
 
     // MARK: - EngineVersionParser
 
-    func testParseLabelHandlesTheVersionLabelForm() {
-        let parsed = EngineVersionParser.parseLabel("CX26.3.0-W11-Gamma087")
-        XCTAssertEqual(parsed?.crossover, [26, 3, 0])
-        XCTAssertEqual(parsed?.wineMajor, 11)
-        XCTAssertEqual(parsed?.gamma, 87)
+    func testParseLabelHandlesTheCurrentForms() {
+        for label in ["CX26-W11-GAMMA", "cx26-w11-gamma"] {
+            let parsed = EngineVersionParser.parseLabel(label)
+            XCTAssertEqual(parsed?.crossoverMajor, 26)
+            XCTAssertEqual(parsed?.wineMajor, 11)
+        }
     }
 
-    func testParseLabelHandlesTheEngineIdSlugForm() {
-        let parsed = EngineVersionParser.parseLabel("cx26.3-w11-gamma087")
-        XCTAssertEqual(parsed?.crossover, [26, 3])
-        XCTAssertEqual(parsed?.wineMajor, 11)
-        XCTAssertEqual(parsed?.gamma, 87)
+    func testParseLabelHandlesTheLegacyGammaCounterForms() {
+        for label in ["CX26.3.0-W11-Gamma087", "cx26.3-w11-gamma087"] {
+            let parsed = EngineVersionParser.parseLabel(label)
+            XCTAssertEqual(parsed?.crossoverMajor, 26)
+            XCTAssertEqual(parsed?.wineMajor, 11)
+        }
     }
 
     func testParseLabelRejectsGarbage() {
@@ -48,6 +41,7 @@ final class EngineArchiveTests {
         XCTAssertEqual(EngineVersionParser.parseBuildCounter(fromName: "CX26W11-GAMMA-DXMT-14.tar.xz"), 14)
         XCTAssertEqual(EngineVersionParser.parseBuildCounter(fromName: "CX26W11-Gamma086-4.tar.xz"), 4)
         XCTAssertEqual(EngineVersionParser.parseBuildCounter(fromName: "engine-cx26.3-w11-gamma087-14"), 14)
+        XCTAssertEqual(EngineVersionParser.parseBuildCounter(fromName: "engine-cx26-w11-gamma-19"), 19)
         // The string-sort trap this exists to avoid: -7 must not "beat" -10.
         XCTAssertTrue((EngineVersionParser.parseBuildCounter(fromName: "x-7") ?? 0)
             < (EngineVersionParser.parseBuildCounter(fromName: "x-10") ?? 0))
@@ -95,6 +89,17 @@ final class EngineArchiveTests {
         ]
         let resolved = try EngineReleaseResolver.newestEngineRelease(in: releases)
         XCTAssertEqual(resolved.archiveName, "CX26W11-GAMMA-DXMT-14.tar.xz")
+    }
+
+    func testNewTagFormOutranksTheLegacyGammaCounterRelease() throws {
+        // The published -15 release carries archive build 17 under the old
+        // tag form; a later build under the new form must win.
+        let releases = [
+            makeRelease(tag: "engine-cx26.3-w11-gamma087-15", archiveName: "CX26W11-GAMMA-DXMT-17.tar.xz"),
+            makeRelease(tag: "engine-cx26-w11-gamma-19", archiveName: "CX26W11-GAMMA-DXMT-19.tar.xz"),
+        ]
+        let resolved = try EngineReleaseResolver.newestEngineRelease(in: releases)
+        XCTAssertEqual(resolved.archiveName, "CX26W11-GAMMA-DXMT-19.tar.xz")
     }
 
     func testIgnoresReleasesWithoutTheEngineTagPrefix() throws {
