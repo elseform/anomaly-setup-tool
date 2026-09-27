@@ -304,8 +304,8 @@ if [[ -f "$CONFIG_FILE" ]]; then
   source "$CONFIG_FILE"
 fi
 
-# DXMT is the only backend. cxcompatdb defaults to D3DMetal when this is
-# unset, so it is always exported, overriding any stale app.env value.
+# DXMT is the only backend. Always exported, overriding a stale app.env
+# value (for example a former d3dmetal), which cxcompatdb would refuse.
 export GAMMA_GRAPHICS_BACKEND=dxmt
 export WINEMSYNC="${WINEMSYNC:-1}"
 export WINEESYNC="${WINEESYNC:-1}"
@@ -669,9 +669,8 @@ def run_setup(args: argparse.Namespace) -> None:
 
     # cxcompatdb checks this on every wine invocation from here on (wineboot,
     # reg add/query, winecfg — not just the final generated game launcher,
-    # whose own export only takes effect after this exits). Without it,
-    # cxcompatdb falls back to its own default (D3DMetal), which the engine
-    # does not carry.
+    # whose own export only takes effect after this exits). Set explicitly so
+    # an inherited non-dxmt value cannot make cxcompatdb refuse to start.
     os.environ["GAMMA_GRAPHICS_BACKEND"] = "dxmt"
 
     app_support = Path.home() / "Library/Application Support" / app_name
