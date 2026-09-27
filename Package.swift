@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
     name: "GAMMASetupTool",
     platforms: [
-        .macOS("15.0")
+        .macOS("26.0")
     ],
     products: [
         .executable(name: "GAMMA Setup Tool", targets: ["GAMMASetupTool"]),

@@ -8,7 +8,7 @@ This README describes the current source. Published builds are available on the 
 
 ## Requirements
 
-- An Apple Silicon Mac running macOS 15 or newer, with Rosetta 2 for the Wine engine.
+- An Apple Silicon Mac running macOS 26 or newer, with Rosetta 2 for the Wine engine.
 - An existing G.A.M.M.A. installation and its `ModOrganizer.exe`, or another Windows executable to launch.
 - Python 3 available to setup. The backend checks `/usr/bin/python3`, `/opt/homebrew/bin/python3`, then `/usr/local/bin/python3`.
 - Internet access for automatic engine resolution and missing runtime downloads. For offline setup, select a local engine archive and provide or cache the runtime files described below.
@@ -63,7 +63,7 @@ The executable picker accepts any readable local `.exe`, using the existing `G:`
 
 Launch output goes to `~/Library/Logs/<app name>/launcher.log`. The native UI quits after creating the launcher process; later Wine or game failures are recorded in that log. The CLI helper at `Contents/MacOS/launcher` remains available, including explicit argument forwarding.
 
-New wrappers use the authored `Gamma.icon` artwork. Both modern appearance assets and a macOS 15 `.icns` fallback are packaged. Existing installed wrappers are not modified.
+New wrappers use the authored `Gamma.icon` artwork. Both modern appearance assets and an `.icns` fallback are packaged. Existing installed wrappers are not modified.
 
 With **Save setup log** enabled, setup events are written to:
 
@@ -88,7 +88,7 @@ Building requires full Xcode with Icon Composer-capable `actool`, selected throu
 ./build.sh
 ```
 
-This compiles the GUI and backend with `swiftc` for Apple Silicon and macOS 15, builds and ad-hoc signs `dist/GAMMA Setup Tool.app`, then replaces `~/Applications/GAMMA Setup Tool.app` with that build. No Xcode project or sibling engine checkout is required. The build also compiles the native wrapper UI and icon; end users need no compiler or Xcode.
+This compiles the GUI and backend with `swiftc` for Apple Silicon and macOS 26, builds and ad-hoc signs `dist/GAMMA Setup Tool.app`, then replaces `~/Applications/GAMMA Setup Tool.app` with that build. No Xcode project or sibling engine checkout is required. The build also compiles the native wrapper UI and icon; end users need no compiler or Xcode.
 
 - `./build.sh run` builds and runs the GUI from `dist/` without installing it.
 - `./build.sh clean` removes `dist/`.
