@@ -36,6 +36,9 @@
   fails.
 - New apps start with DXMT's shader IR release (`d3d11.releaseShaderIR`) off; DXMT turns it
   on when it is not set. Blit encoder merging stays off unless enabled in the app.
+- The app's settings add **Frame Limiter** (`DXMT_FRAME_LIMITER`), which paces the game itself to
+  Preferred Max Frame Rate or half the display's refresh rate. Both now sit in Display &
+  Performance. The limiter needs a DXMT release that includes it.
 
 - The wizard opens on a welcome page where you select `ModOrganizer.exe` (or another
   executable) and then name the app on the same page. The name is filled in from the
