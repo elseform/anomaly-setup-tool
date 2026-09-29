@@ -1,6 +1,4 @@
 import SwiftUI
-import AppKit
-import UniformTypeIdentifiers
 
 struct SchemaRow: View {
     let model: ConfiguratorModel
@@ -112,132 +110,45 @@ struct SettingRow: View {
 struct ConfiguratorView: View {
     let model: ConfiguratorModel
     let launcher: LaunchController
-    @AppStorage("advancedExpanded") private var showAdvanced = false
+    @AppStorage("launcherCategory") private var category = SettingCategory.launch
     @State private var confirmReset = false
-    /// Height of everything in the form, so the window can match it.
-    @State private var contentHeight: CGFloat = Layout.initialHeight
+
+    private var isLocked: Bool { !model.canEdit || launcher.isLaunching }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Form {
-                Section("Launch Target") {
-                    LabeledContent("Executable") {
-                        Text(model.targetPath.isEmpty ? "Choose an executable" : model.targetPath)
-                            .lineLimit(2).truncationMode(.middle).textSelection(.enabled)
-                        Button("Choose…", action: chooseTarget)
-                            .disabled(!model.canEdit || launcher.isLaunching)
-                    }
-                    if model.isModOrganizer {
-                        Text("Game launch arguments are configured in Mod Organizer. Press Run there to start the game.")
-                            .font(.caption).foregroundStyle(.secondary)
-                    }
-                }
-                if let error = model.loadError ?? model.saveError ?? launcher.error {
-                    Section {
-                        Label(error, systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(StatusTone.error.color)
-                    }
-                }
-
-                Group {
-                    ForEach(mainGroups, id: \.title) { group in
-                        section(for: group)
-                    }
-
-                    advancedToggle
-
-                    if showAdvanced {
-                        ForEach(advancedGroups, id: \.title) { group in
-                            section(for: group)
-                        }
-                    }
-                }
-                .id(model.revision)
-                .disabled(!model.canEdit || launcher.isLaunching)
-
-                Section {
-                    Button("Reset to Defaults…", role: .destructive) {
-                        confirmReset = true
-                    }
-                    .disabled(!model.canEdit || launcher.isLaunching)
-                }
+        NavigationSplitView {
+            LauncherSidebar(model: model, selection: $category)
+        } detail: {
+            CategoryDetail(model: model, launcher: launcher, category: category)
+        }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            VStack(spacing: 0) {
+                Divider()
+                bottomBar
             }
-            .formStyle(.grouped)
+            .background(.bar)
+        }
+        .frame(minWidth: Layout.minimumWidth, minHeight: Layout.minimumHeight)
+    }
+
+    private var bottomBar: some View {
+        HStack {
+            Text("Settings save automatically.").font(.caption).foregroundStyle(.secondary)
+            Spacer()
+            Button("Reset to Defaults…", role: .destructive) {
+                confirmReset = true
+            }
+            .disabled(isLocked)
             .confirmationDialog("Reset all settings to their defaults?", isPresented: $confirmReset) {
                 Button("Reset", role: .destructive, action: model.resetToDefaults)
             } message: {
                 Text("Every setting, including launch arguments, goes back to what a new install starts with.")
             }
-            .onScrollGeometryChange(for: CGFloat.self) { geometry in
-                geometry.contentSize.height + geometry.contentInsets.top + geometry.contentInsets.bottom
-            } action: { _, height in
-                contentHeight = height
-            }
-            // The window follows this size (.windowResizability(.contentSize));
-            // past the screen's height the form scrolls instead.
-            .frame(height: min(contentHeight, Layout.maximumHeight - 64))
-            Divider()
-            HStack {
-                Text("Settings save automatically.").font(.caption).foregroundStyle(.secondary)
-                Spacer()
-                Button(launcher.isLaunching ? "Launching…" : "Launch") { launcher.launch(model: model) }
-                    .buttonStyle(.borderedProminent)
-                    .keyboardShortcut("r", modifiers: .command)
-                    .disabled(!model.canEdit || launcher.isLaunching)
-            }
-            .padding()
+            Button(launcher.isLaunching ? "Launching…" : "Launch") { launcher.launch(model: model) }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut("r", modifiers: .command)
+                .disabled(isLocked)
         }
-        .frame(width: Layout.windowWidth)
-    }
-
-    private func chooseTarget() {
-        let panel = NSOpenPanel()
-        panel.canChooseDirectories = false
-        panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = [UTType(filenameExtension: "exe") ?? .data]
-        panel.message = "Choose the Windows executable this wrapper launches."
-        panel.begin { response in
-            if response == .OK, let url = panel.url { model.selectTarget(url) }
-        }
-    }
-
-    private var advancedToggle: some View {
-        Section {
-            Button {
-                showAdvanced.toggle()
-            } label: {
-                HStack {
-                    Text(showAdvanced ? "Hide Advanced Settings" : "Show Advanced Settings")
-                    Spacer()
-                    let changed = model.advancedChangedCount
-                    if changed > 0 {
-                        Text("\(changed) changed")
-                            .foregroundStyle(.secondary)
-                    }
-                    Image(systemName: "chevron.right")
-                        .rotationEffect(.degrees(showAdvanced ? 90 : 0))
-                        .foregroundStyle(.secondary)
-                        .accessibilityHidden(true)
-                }
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-        } footer: {
-            Text("For troubleshooting. Most players never need these.")
-        }
-    }
-
-    private func section(for group: SettingGroup) -> some View {
-        Section {
-            ForEach(group.settings, id: \.self) { setting in
-                SettingRow(model: model, setting: setting)
-            }
-        } header: {
-            Text(group.title)
-        } footer: {
-            if let help = group.help {
-                Text(help)
-            }
-        }
+        .padding()
     }
 }

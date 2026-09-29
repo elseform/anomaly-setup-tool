@@ -13,6 +13,10 @@ struct LauncherTests {
         }
         let literals = ["G:\\A B\\O'Brien.exe", "quotes \" $HOME `id` $(id) \\ end", "", "semi;colon", "Unicode Ж"]
         for value in literals { check(unquote(shellQuote(value)) == value, "shell literal round trip: \(value)") }
+        let shown = SettingCategory.allCases.flatMap(\.groups).flatMap(\.settings).map(\.key)
+        let expected = schema.map(\.key).filter { $0 != "GAMMA_GRAPHICS_BACKEND" } + dxmtConfigKeys.map(\.key)
+        check(shown.count == Set(shown).count, "every setting is listed once")
+        check(Set(shown) == Set(expected), "every setting has a category")
         let wrapper = root.appendingPathComponent("Test.app")
         let resources = wrapper.appendingPathComponent("Contents/Resources")
         let helper = wrapper.appendingPathComponent("Contents/MacOS/launcher")
