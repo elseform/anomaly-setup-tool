@@ -54,13 +54,13 @@ extension AppModel {
     var wrapperNameValidationMessage: String {
         let trimmed = appName.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
-            return "Enter an app name."
+            return "Enter a wrapper name."
         }
         if !SetupConfiguration.isValidWrapperName(appName) {
             return "Use a name without / or : characters."
         }
         if FileManager.default.fileExists(atPath: outputAppPath) {
-            return "An app with this name already exists."
+            return "A wrapper with this name already exists."
         }
         return ""
     }
@@ -86,12 +86,12 @@ extension AppModel {
     }
 
     var createHeaderTitle: String {
-        installFailed ? "Something went wrong" : "Installation in progress"
+        installFailed ? "Something went wrong" : "Creating the wrapper"
     }
 
     var createHeaderSubtitle: String {
         if installFailed {
-            return "Setup stopped before the app was finished."
+            return "Setup stopped before the wrapper was finished."
         }
         return "This takes a few minutes."
     }

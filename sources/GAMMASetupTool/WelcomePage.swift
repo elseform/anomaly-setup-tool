@@ -67,11 +67,11 @@ struct WelcomePage: View {
 
     private var appNameSection: some View {
         Section {
-            TextField("App name", text: $model.appName)
+            TextField("Wrapper name", text: $model.appName)
                 .focused($appNameIsFocused)
             LabeledContent {
                 if model.outputAppAlreadyExists {
-                    Button("Show existing app", action: model.showExistingApp)
+                    Button("Show existing wrapper", action: model.showExistingApp)
                 }
             } label: {
                 RowLabel(title: "Saved as", detail: model.outputAppPath, detailIsPath: true)

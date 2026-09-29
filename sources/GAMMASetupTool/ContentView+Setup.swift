@@ -44,14 +44,14 @@ struct SetupPage: View {
             }
             Label {
                 Text(model.wineEngineArchivePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                     ? "Download latest gamma-wine-engine"
-                     : "Use local engine copy")
+                     ? "Download the latest wine engine"
+                     : "Use the local wine engine archive")
             } icon: {
                 Image(systemName: "arrow.down.circle")
                     .foregroundStyle(.tint)
             }
             Label {
-                Text("Set up the wine prefix for \(model.selectedLaunchExecutableLabel)")
+                Text("Set up the wrapper for \(model.selectedLaunchExecutableLabel)")
             } icon: {
                 Image(systemName: "play.circle")
                     .foregroundStyle(.tint)
@@ -66,12 +66,12 @@ struct SetupPage: View {
     // newest published gamma-wine-engine release is resolved and downloaded
     // automatically; a path here is a local archive, used as is.
     private var engineArchiveControls: some View {
-        Section("Wine engine") {
+        Section("Wine Engine") {
             Text(model.wineEngineArchivePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                 ? "Get latest release from github."
-                 : "Using your local engine file as is.")
+                 ? "Downloads the latest release from GitHub."
+                 : "Uses your local engine archive as it is.")
                 .foregroundStyle(.secondary)
-            DisclosureGroup("Use local engine pack instead", isExpanded: $showLocalEngine) {
+            DisclosureGroup("Use a local engine archive instead", isExpanded: $showLocalEngine) {
                 HStack(spacing: 8) {
                     TextField("Automatic download", text: $model.wineEngineArchivePath)
                         .accessibilityLabel("Engine archive")
@@ -80,7 +80,7 @@ struct SetupPage: View {
                     }
                     .accessibilityLabel("Choose engine archive")
                 }
-                SectionNote("Pick .tar.xz engine archive.")
+                SectionNote("Choose a .tar.xz engine archive.")
                 if !model.wineEngineArchivePath.isEmpty {
                     Button("Use automatic download") {
                         model.wineEngineArchivePath = ""

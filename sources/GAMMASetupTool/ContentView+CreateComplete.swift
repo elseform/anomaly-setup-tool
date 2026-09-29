@@ -16,7 +16,7 @@ struct CreatePage: View {
                         .accessibilityAddTraits(.updatesFrequently)
                 }
                 ProgressView(value: model.progress)
-                    .accessibilityLabel("App creation progress")
+                    .accessibilityLabel("Wrapper creation progress")
             }
 
             Section {
@@ -56,7 +56,7 @@ struct CreatePage: View {
     @ViewBuilder
     private var installFailureView: some View {
         Section {
-            Label("The app couldn't be created", systemImage: "exclamationmark.triangle.fill")
+            Label("The wrapper couldn’t be created", systemImage: "exclamationmark.triangle.fill")
                 .foregroundStyle(SetupStatusTone.error.color)
             if model.savedLogPath.isEmpty {
                 Text(model.saveVerboseLog
@@ -105,7 +105,7 @@ struct CreatePage: View {
             (2, "Windows environment", "Preparing the Windows environment"),
             (3, "Drives", "Connecting your GAMMA folder"),
             (4, "Windows components", "Installing Windows components"),
-            (5, "App", "Building the app and its launcher"),
+            (5, "Wrapper", "Building the wrapper and its launcher"),
             (6, "Finishing", "Finishing up")
         ]
     }
