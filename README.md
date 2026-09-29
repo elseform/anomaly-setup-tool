@@ -1,6 +1,6 @@
 # GAMMA Setup Tool
 
-Status: current development version, 0.90 (`dev` branch).
+Status: current development version, 0.96 (`dev` branch).
 
 Native macOS tool for creating a Wine `.app` wrapper around an existing S.T.A.L.K.E.R. G.A.M.M.A. installation, using [gamma-wine-engine](https://github.com/elseform/gamma-wine-engine) and DXMT. It does not install G.A.M.M.A.
 

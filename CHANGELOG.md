@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.90 — unreleased
+## 0.96 — unreleased
 
 ### Main improvements
 
