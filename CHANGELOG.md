@@ -62,7 +62,7 @@
 - The wizard opens on a welcome page where you select `ModOrganizer.exe` (or another
   executable) and then name the app on the same page. The name is filled in from the
   executable, with `-2`, `-3`, ... added when that app already exists. The separate review
-  step is gone: **Create app** starts setup from the options page, which lists what setup
+  step is gone: **Create wrapper** starts setup from the options page, which lists what setup
   will do. Engine file,
   drive-mapping, and log options are collapsed, and wording throughout uses plain
   language instead of wrapper and engine terms.
