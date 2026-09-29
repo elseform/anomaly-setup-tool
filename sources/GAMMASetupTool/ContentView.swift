@@ -37,13 +37,13 @@ extension ContentView {
         switch step {
         case .welcome:
             return (
-                "Welcome to GAMMA Setup Tool",
-                "You need existing GAMMA installation to proceed."
+                "Welcome",
+                "You need an existing GAMMA installation to continue."
             )
         case .setup:
             return (
                 "Options",
-                "Select sources and confirm installation options."
+                "Choose where the engine comes from and confirm the setup options."
             )
         case .create:
             return (model.createHeaderTitle, model.createHeaderSubtitle)
@@ -160,13 +160,13 @@ extension ContentView {
             .keyboardShortcut(.defaultAction)
             .disabled(wrapperNameActionsDisabled)
         case .setup:
-            createButton(title: "Create app")
+            createButton(title: "Create wrapper")
         case .create:
             if model.installFailed && !model.isRunning && !createButtonSubmitted {
                 createButton(title: "Try again")
             }
         case .complete:
-            Button("Show in Finder and quit") {
+            Button("Show in Finder") {
                 model.showCreatedAppAndQuit()
             }
             .buttonStyle(.borderedProminent)

@@ -20,7 +20,7 @@ Extract the downloaded setup-tool archive and open `GAMMA Setup Tool.app`, or [b
 1. On the first page, click **Choose…** and select `ModOrganizer.exe` from your existing installation. You can select another `.exe` as the launch target instead. The page then says whether setup will update ModOrganizer's `usvfs` files.
 2. The app name is filled in from the selected executable (`ModOrganizer` for `ModOrganizer.exe`), with `-2`, `-3`, and so on added if an app of that name already exists in `~/Applications`. Change it if you like, then click **Continue**.
 3. On **Options**, the engine is downloaded automatically; expand **Use a local engine file** to choose a local `.tar.xz` archive instead. Optionally expand **Windows components** to see which Microsoft runtime files are already present or choose a folder containing downloaded copies. **Advanced** holds the drive mappings and **Save a setup log**; leave the log enabled for troubleshooting.
-4. Click **Create app**.
+4. Click **Create wrapper**.
 5. Open the created app from Finder. Adjust settings or choose another Windows executable, then press **Launch**. The settings window quits after handing off to the launch process. With Mod Organizer selected, press **Run** there to start the game.
 
 Setup checks the selected executable exists; it does not validate the contents or health of the G.A.M.M.A. installation.
