@@ -24,7 +24,7 @@ final class ConfiguratorModel {
         } else {
             prefixURL = nil
             configFile = ""
-            loadError = "Could not find this install's app.env. Open the installed GAMMA wrapper app; settings cannot be saved."
+            loadError = "Could not find this wrapper’s app.env. Open the installed GAMMA wrapper; settings cannot be saved."
             state = defaultState()
         }
         // D3DMetal is no longer offered; move installs that selected it to DXMT.

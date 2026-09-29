@@ -167,7 +167,7 @@ let friendlyDescriptions: [String: String] = [
     "WINEESYNC": "Fallback thread synchronization in Wine. Turn off only to troubleshoot.",
     "ROSETTA_ADVERTISE_AVX": "Tells the game the CPU supports AVX under Rosetta.",
     "WINEDEBUG": "Which Wine debug messages are logged. \"-all\" logs none.",
-    "DEFAULT_GAME_ARGS": "Extra arguments passed to the program the app launches.",
+    "DEFAULT_GAME_ARGS": "Extra arguments passed to the program the wrapper launches.",
     "GAMMA_RETINA_MODE": "Lets the game use your display's full Retina resolution.",
     "GAMMA_RETINA_LOGPIXELS": "Windows DPI to use in Retina mode.",
 
