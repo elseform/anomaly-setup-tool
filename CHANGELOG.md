@@ -35,9 +35,10 @@
   follows the steps, and the last lines of setup output are no longer lost when setup
   fails.
 - New apps start with Blit Encoder Merging (`DXMT_REORDER_BLITS`), Release Shader IR
-  (`d3d11.releaseShaderIR`) and Force SDR Output (`dxgi.forceSDR`) on, next to V-Sync and
-  Clamp NaN Samples To Zero. Frame Limiter, Preferred Max Frame Rate and the Performance
-  Overlay stay off. Existing apps keep their settings.
+  (`d3d11.releaseShaderIR`) and Force SDR Output (`dxgi.forceSDR`) on, next to Clamp NaN
+  Samples To Zero. V-Sync starts on Auto, which follows the game's own V-Sync setting.
+  Frame Limiter, Preferred Max Frame Rate and the Metal HUD Overlay stay off. Existing apps
+  keep their settings.
 - The app's settings add **Frame Limiter** (`DXMT_FRAME_LIMITER`), which paces the game itself to
   Preferred Max Frame Rate or half the display's refresh rate. Both now sit in Frame Rate &
   Sync. The limiter needs a DXMT release that includes it.
