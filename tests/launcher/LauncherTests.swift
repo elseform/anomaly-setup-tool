@@ -43,6 +43,7 @@ struct LauncherTests {
         try "export DXMT_CONFIG=\"d3d11.sampleNaNToZero=true;\"\n".write(to: config, atomically: true, encoding: .utf8)
         let model = ConfiguratorModel(install: InstallLayout(wrapperURL: wrapper))
         check(model.state.dxmtConfig["d3d11.sampleNaNToZero"]?.enabled == true, "fresh seed displays NaN clamp On")
+        check(model.state.vars["DXMT_REORDER_BLITS"]?.enabled == false, "existing app.env without the line keeps blit merging off")
         model.selectTarget(exe)
         for value in literals {
             model.setVar("DEFAULT_GAME_ARGS", enabled: true, value: value)
@@ -61,6 +62,11 @@ struct LauncherTests {
         check(model.targetPath == selected.windowsPath, "reset preserves target")
         check(model.state.vars["DXMT_REORDER_BLITS"] != nil, "transferred uncommitted setting")
         check(model.state.dxmtConfig["d3d11.releaseShaderIR"] != nil, "transferred shader setting")
+        check(model.state.vars["DXMT_REORDER_BLITS"]?.enabled == true && model.isOn("DXMT_REORDER_BLITS"), "defaults merge blits")
+        check(model.state.dxmtConfig["d3d11.releaseShaderIR"]?.enabled == true && model.state.dxmtConfig["d3d11.releaseShaderIR"]?.value == "true", "defaults release shader IR")
+        check(model.state.dxmtConfig["dxgi.forceSDR"]?.enabled == true && model.state.dxmtConfig["dxgi.forceSDR"]?.value == "true", "defaults force SDR")
+        check(!model.isOn("MTL_HUD_ENABLED") && !model.isOn("DXMT_FRAME_LIMITER"), "defaults keep HUD and limiter off")
+        check(model.state.dxmtConfig["d3d11.preferredMaxFrameRate"]?.enabled == false, "defaults leave frame cap off")
         var starts = 0
         var exits = 0
         let launcher = LaunchController(spawn: { _, _ in

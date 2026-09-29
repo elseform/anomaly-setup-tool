@@ -167,7 +167,7 @@ func parseEnvLines(path: String) -> ParsedEnv {
 func defaultState() -> ConfiguratorState {
     var state = ConfiguratorState()
     for entry in schema {
-        state.vars[entry.key] = VarEntry(enabled: entry.alwaysOn, value: entry.defaultValue)
+        state.vars[entry.key] = VarEntry(enabled: entry.enabledInNewInstall, value: entry.defaultValue)
     }
     for entry in dxmtConfigKeys {
         state.dxmtConfig[entry.key] = VarEntry(enabled: entry.enabledByDefault, value: entry.defaultValue)
@@ -231,7 +231,7 @@ func generateEnv(_ state: ConfiguratorState) -> String {
     lines.append("")
 
     for entry in schema {
-        let varEntry = state.vars[entry.key] ?? VarEntry(enabled: entry.alwaysOn, value: entry.defaultValue)
+        let varEntry = state.vars[entry.key] ?? VarEntry(enabled: entry.enabledInNewInstall, value: entry.defaultValue)
         let outValue = shellQuote(varEntry.value)
         if entry.alwaysOn || varEntry.enabled {
             lines.append("export \(entry.key)=\(outValue)")

@@ -71,7 +71,7 @@ final class ConfiguratorModel {
         case .env(let key):
             guard let entry = schemaByKey[key] else { return false }
             let current = varEntry(for: entry)
-            if current.enabled != entry.alwaysOn { return true }
+            if current.enabled != entry.enabledInNewInstall { return true }
             return current.enabled && current.value != entry.defaultValue
         case .dxmt(let key):
             guard let entry = dxmtConfigByKey[key] else { return false }
@@ -82,7 +82,7 @@ final class ConfiguratorModel {
     }
 
     func varEntry(for entry: SchemaEntry) -> VarEntry {
-        state.vars[entry.key] ?? VarEntry(enabled: entry.alwaysOn, value: entry.defaultValue)
+        state.vars[entry.key] ?? VarEntry(enabled: entry.enabledInNewInstall, value: entry.defaultValue)
     }
 
     func setVar(_ key: String, enabled: Bool, value: String, save: Bool = true) {

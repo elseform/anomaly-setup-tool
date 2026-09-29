@@ -34,8 +34,10 @@
 - The setup checklist follows the order the steps actually run in, the progress bar
   follows the steps, and the last lines of setup output are no longer lost when setup
   fails.
-- New apps start with DXMT's shader IR release (`d3d11.releaseShaderIR`) off; DXMT turns it
-  on when it is not set. Blit encoder merging stays off unless enabled in the app.
+- New apps start with Blit Encoder Merging (`DXMT_REORDER_BLITS`), Release Shader IR
+  (`d3d11.releaseShaderIR`) and Force SDR Output (`dxgi.forceSDR`) on, next to V-Sync and
+  Clamp NaN Samples To Zero. Frame Limiter, Preferred Max Frame Rate and the Performance
+  Overlay stay off. Existing apps keep their settings.
 - The app's settings add **Frame Limiter** (`DXMT_FRAME_LIMITER`), which paces the game itself to
   Preferred Max Frame Rate or half the display's refresh rate. Both now sit in Display &
   Performance. The limiter needs a DXMT release that includes it.
