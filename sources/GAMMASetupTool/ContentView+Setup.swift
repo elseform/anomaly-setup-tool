@@ -27,7 +27,7 @@ struct SetupPage: View {
             .disabled(!ready)
             .opacity(ready ? 1 : 0.45)
         }
-        .formStyle(.grouped)
+        .pageForm()
         .task(id: model.selectedLaunchExecutablePath) {
             model.refreshUSVFSPlan()
         }
@@ -77,20 +77,22 @@ struct SetupPage: View {
                  : "Uses your local engine archive as it is.")
                 .foregroundStyle(.secondary)
             DisclosureGroup("Use a local engine archive instead", isExpanded: isOpen(.localEngine)) {
-                HStack(spacing: 8) {
-                    TextField("Automatic download", text: $model.wineEngineArchivePath)
-                        .accessibilityLabel("Engine archive")
-                    Button("Choose…") {
-                        model.chooseWineEngineArchive()
+                DisclosureBody {
+                    HStack(spacing: 8) {
+                        TextField("Engine archive", text: $model.wineEngineArchivePath, prompt: Text("Automatic download"))
+                            .accessibilityLabel("Engine archive")
+                        Button("Choose…") {
+                            model.chooseWineEngineArchive()
+                        }
+                        .accessibilityLabel("Choose engine archive")
                     }
-                    .accessibilityLabel("Choose engine archive")
-                }
-                SectionNote("Choose a .tar.xz engine archive.")
-                if !model.wineEngineArchivePath.isEmpty {
-                    Button("Use automatic download") {
-                        model.wineEngineArchivePath = ""
+                    SectionNote("Choose a .tar.xz engine archive.")
+                    if !model.wineEngineArchivePath.isEmpty {
+                        Button("Use automatic download") {
+                            model.wineEngineArchivePath = ""
+                        }
+                        .buttonStyle(.link)
                     }
-                    .buttonStyle(.link)
                 }
             }
             .onAppear {
@@ -112,31 +114,33 @@ struct SetupPage: View {
     private var redistInstallerControls: some View {
         Section {
             DisclosureGroup(isExpanded: isOpen(.redistInstallers)) {
-                ForEach(redistInstallerStatuses, id: \.installer.filename) { status in
-                    Label {
-                        LabeledContent(status.installer.title) {
-                            Text(status.isPresent
-                                 ? "Found locally; verified during setup"
-                                 : "Will be downloaded (\(status.installer.sizeLabel))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                DisclosureBody {
+                    ForEach(redistInstallerStatuses, id: \.installer.filename) { status in
+                        Label {
+                            LabeledContent(status.installer.title) {
+                                Text(status.isPresent
+                                     ? "Found locally; verified during setup"
+                                     : "Will be downloaded (\(status.installer.sizeLabel))")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        } icon: {
+                            Image(systemName: status.isPresent ? "checkmark.circle.fill" : "arrow.down.circle")
+                                .foregroundStyle(status.isPresent ? SetupStatusTone.success.color : .secondary)
                         }
-                    } icon: {
-                        Image(systemName: status.isPresent ? "checkmark.circle.fill" : "arrow.down.circle")
-                            .foregroundStyle(status.isPresent ? SetupStatusTone.success.color : .secondary)
+                        .accessibilityElement(children: .combine)
                     }
-                    .accessibilityElement(children: .combine)
-                }
-                HStack(spacing: 8) {
-                    TextField("Optional folder with downloaded installers",
-                              text: $model.redistInstallerDirectory)
-                        .accessibilityLabel("Downloaded installers folder")
-                    Button("Choose…") {
-                        model.chooseRedistInstallerDirectory()
+                    HStack(spacing: 8) {
+                        TextField("Optional folder with downloaded installers",
+                                  text: $model.redistInstallerDirectory)
+                            .accessibilityLabel("Downloaded installers folder")
+                        Button("Choose…") {
+                            model.chooseRedistInstallerDirectory()
+                        }
+                        .accessibilityLabel("Choose downloaded installers folder")
                     }
-                    .accessibilityLabel("Choose downloaded installers folder")
+                    SectionNote("Setup verifies every file against the engine’s required checksum. Missing files are downloaded automatically.")
                 }
-                SectionNote("Setup verifies every file against the engine’s required checksum. Missing files are downloaded automatically.")
             } label: {
                 RowLabel(title: "Dependencies", detail: "Downloaded automatically")
             }
@@ -153,8 +157,10 @@ struct SetupPage: View {
     private var advancedControls: some View {
         Section {
             DisclosureGroup("Advanced", isExpanded: isOpen(.advanced)) {
-                driveMappingControls
-                Toggle(SetupOptionCopy.saveDetailedLog, isOn: $model.saveVerboseLog)
+                DisclosureBody {
+                    driveMappingControls
+                    Toggle(SetupOptionCopy.saveDetailedLog, isOn: $model.saveVerboseLog)
+                }
             }
         }
     }

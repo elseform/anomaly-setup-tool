@@ -46,6 +46,27 @@ struct SectionNote: View {
             .font(.caption)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// The rows inside an open disclosure, spaced apart and clear of its title.
+struct DisclosureBody<Content: View>: View {
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            content()
+        }
+        .padding(.top, 8)
+    }
+}
+
+extension View {
+    /// The grouped form every page uses, with room above the first section.
+    func pageForm() -> some View {
+        formStyle(.grouped)
+            .contentMargins(.top, 8, for: .scrollContent)
     }
 }
 

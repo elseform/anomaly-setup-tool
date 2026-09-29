@@ -71,7 +71,7 @@ extension ContentView {
         }
         .padding(.horizontal, Layout.titleHorizontalPadding)
         .padding(.top, 16)
-        .padding(.bottom, 4)
+        .padding(.bottom, 12)
         .transaction { transaction in
             transaction.animation = nil
         }

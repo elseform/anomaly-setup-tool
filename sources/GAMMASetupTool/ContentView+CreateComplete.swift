@@ -41,7 +41,7 @@ struct CreatePage: View {
                 }
             }
         }
-        .formStyle(.grouped)
+        .pageForm()
     }
 
     private var currentStageTitle: String {
@@ -211,7 +211,7 @@ struct CompletePage: View {
                 }
             }
         }
-        .formStyle(.grouped)
+        .pageForm()
     }
 
     /// The generated wrapper owns both settings and launching.
