@@ -115,5 +115,5 @@ public enum SetupDefaults {
     /// Info.plist (a `swift run` build). Kept in step with `build.sh`'s
     /// `APP_VERSION` by a test (`build.sh` has no way to read a Swift
     /// constant, so the check runs the other direction).
-    public static let toolVersion = "0.90"
+    public static let toolVersion = "0.96"
 }
