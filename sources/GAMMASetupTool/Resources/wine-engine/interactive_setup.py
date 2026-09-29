@@ -857,7 +857,7 @@ def run_setup(args: argparse.Namespace) -> None:
             "export DXMT_METALFX_SPATIAL_SWAPCHAIN=0",
             "export DXMT_ENABLE_NVEXT=1",
             "export DXMT_REORDER_BLITS=1",
-            'export DXMT_CONFIG="d3d11.displaySync=true;d3d11.sampleNaNToZero=true;d3d11.releaseShaderIR=true;dxgi.forceSDR=true;"',
+            'export DXMT_CONFIG="d3d11.displaySync=auto;d3d11.sampleNaNToZero=true;d3d11.releaseShaderIR=true;dxgi.forceSDR=true;"',
         ]
         config_file.write_text("\n".join(lines) + "\n")
         log(f"  Wrote settings: {config_file}")

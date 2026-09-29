@@ -82,6 +82,7 @@ class WrapperTests(unittest.TestCase):
         self.assertIn("d3d11.sampleNaNToZero=true;", config.read_text())
         self.assertIn("d3d11.releaseShaderIR=true;dxgi.forceSDR=true;", config.read_text())
         self.assertIn("export DXMT_REORDER_BLITS=1\n", config.read_text())
+        self.assertIn("d3d11.displaySync=auto;", config.read_text())
         self.assertIn("export MTL_HUD_ENABLED=0\n", config.read_text())
 
     def test_missing_resources_fail_before_outputs(self):
