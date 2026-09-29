@@ -20,7 +20,7 @@ struct ContentView: View {
             Divider()
             footer
         }
-        .frame(minWidth: Layout.windowMinimumWidth, minHeight: Layout.windowMinimumHeight)
+        .frame(width: Layout.windowWidth, height: Layout.windowHeight)
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: step)
         .onChange(of: model.isRunning) { _, isRunning in
             if isRunning {
@@ -121,13 +121,11 @@ extension ContentView {
     }
 
     private var footerLinks: some View {
-        let sourceURL = URL(string: "https://github.com/elseform/gamma-setup-tool")!
-
         return HStack(spacing: 12) {
-            Link("GitHub - elseform", destination: sourceURL)
+            Link(SupportCopy.githubTitle, destination: SupportCopy.githubURL)
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                .help("Open the GAMMA Setup Tool repository by elseform")
+                .help(SupportCopy.githubHelp)
 
             Link(SupportCopy.discordTitle, destination: SupportCopy.discordURL)
                 .font(.caption)
