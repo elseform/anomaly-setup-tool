@@ -39,8 +39,13 @@
   Clamp NaN Samples To Zero. Frame Limiter, Preferred Max Frame Rate and the Performance
   Overlay stay off. Existing apps keep their settings.
 - The app's settings add **Frame Limiter** (`DXMT_FRAME_LIMITER`), which paces the game itself to
-  Preferred Max Frame Rate or half the display's refresh rate. Both now sit in Display &
-  Performance. The limiter needs a DXMT release that includes it.
+  Preferred Max Frame Rate or half the display's refresh rate. Both now sit in Frame Rate &
+  Sync. The limiter needs a DXMT release that includes it.
+- The app's settings window is wider and resizable, with a sidebar of categories instead
+  of one long list: Launch, Frame Rate & Sync, Display and Upscaling, then Performance,
+  Rendering Fixes, Compatibility, Wine and Debugging under Advanced. A badge on each
+  category counts the settings changed from what a new app starts with. Reset to
+  Defaults and Launch sit at the bottom of the window.
 
 - The wizard opens on a welcome page where you select `ModOrganizer.exe` (or another
   executable) and then name the app on the same page. The name is filled in from the

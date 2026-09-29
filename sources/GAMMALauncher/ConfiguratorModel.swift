@@ -61,9 +61,9 @@ final class ConfiguratorModel {
         return isOn(parent)
     }
 
-    /// Advanced settings that differ from what a new install starts with.
-    var advancedChangedCount: Int {
-        advancedGroups.flatMap(\.settings).filter(isChanged).count
+    /// Settings in the category that differ from what a new install starts with.
+    func changedCount(in category: SettingCategory) -> Int {
+        category.groups.flatMap(\.settings).filter(isChanged).count
     }
 
     private func isChanged(_ setting: SettingRef) -> Bool {

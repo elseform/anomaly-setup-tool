@@ -1,14 +1,10 @@
-import AppKit
+import CoreGraphics
 
 enum Layout {
-    static let windowWidth: CGFloat = 620
-    static let initialHeight: CGFloat = 600
-    static let fieldWidth: CGFloat = 200
-
-    /// Tallest the window gets before the form scrolls: the screen's
-    /// usable height, less room for the title bar.
-    @MainActor
-    static var maximumHeight: CGFloat {
-        (NSScreen.main?.visibleFrame.height ?? 900) - 60
-    }
+    static let defaultWidth: CGFloat = 860
+    static let defaultHeight: CGFloat = 600
+    static let minimumWidth: CGFloat = 760
+    static let minimumHeight: CGFloat = 480
+    static let sidebarWidth: CGFloat = 230
+    static let fieldWidth: CGFloat = 240
 }

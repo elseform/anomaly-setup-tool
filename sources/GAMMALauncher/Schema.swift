@@ -4,7 +4,7 @@ import Foundation
 // SCHEMA; this is the only copy now. It defines what app.env lines get
 // written, so keys, kinds and always_on/quoted flags must stay compatible with
 // existing installs' app.env files. Where each setting appears in the window
-// is decided separately, by mainGroups/advancedGroups below.
+// is decided separately, by SettingCategory below.
 // Defaults must match the app.env seed in gamma-setup-tool's
 // interactive_setup.py, which is what a new wrapper actually starts from.
 enum SchemaKind {
@@ -205,64 +205,137 @@ struct SettingGroup {
     var help: String? = nil
 }
 
-/// Always-visible sections, in window order: settings a player actually changes.
-let mainGroups: [SettingGroup] = [
-    SettingGroup(title: "Display & Performance", settings: [
-        .dxmt("d3d11.displaySync"),
-        .dxmt("d3d11.preferredMaxFrameRate"),
-        .env("DXMT_FRAME_LIMITER"),
-        .env("DXMT_ENABLE_NVEXT"),
-        .env("DXMT_METALFX_SPATIAL_SWAPCHAIN"),
-        .dxmt("d3d11.metalSpatialUpscaleFactor"),
-        .env("MTL_HUD_ENABLED"),
-    ]),
-    SettingGroup(title: "Game", settings: [
-        .env("DEFAULT_GAME_ARGS"),
-    ]),
-    SettingGroup(title: "Rendering Fixes", settings: [
-        .dxmt("d3d11.sampleNaNToZero"),
-        .dxmt("d3d11.defuseFma"),
-    ], help: "Default leaves the option to DXMT's own built-in default."),
-]
+/// A sidebar entry in the window. Every setting except GAMMA_GRAPHICS_BACKEND
+/// appears in exactly one category.
+enum SettingCategory: String, CaseIterable, Identifiable {
+    case launch
+    case frameRate
+    case display
+    case upscaling
+    case performance
+    case renderingFixes
+    case compatibility
+    case wine
+    case debugging
 
-/// Sections shown under Advanced, in window order.
-let advancedGroups: [SettingGroup] = [
-    SettingGroup(title: "Performance", settings: [
-        .dxmt("d3d11.releaseShaderIR"),
-        .env("DXMT_REORDER_BLITS"),
-    ]),
-    SettingGroup(title: "Display", settings: [
-        .env("GAMMA_RETINA_MODE"),
-        .env("GAMMA_RETINA_LOGPIXELS"),
-    ]),
-    SettingGroup(title: "Compatibility", settings: [
-        .env("WINEMSYNC"),
-        .env("WINEESYNC"),
-        .env("ROSETTA_ADVERTISE_AVX"),
-        .dxmt("d3d11.maxFeatureLevel"),
-        .dxmt("dxmt.shaderMetalVersion"),
-        .dxmt("d3d11.ignoreMapFlagNoWait"),
-        .dxmt("dxgi.forceSDR"),
-        .dxmt("dxgi.handleAltTab"),
-    ]),
-    SettingGroup(title: "GPU Identity", settings: [
-        .dxmt("dxgi.customVendorId"),
-        .dxmt("dxgi.customDeviceId"),
-        .dxmt("dxgi.customDeviceDesc"),
-    ]),
-    SettingGroup(title: "Shader Cache", settings: [
-        .env("DXMT_SHADER_CACHE"),
-        .env("DXMT_SHADER_CACHE_PATH"),
-    ]),
-    SettingGroup(title: "Debugging & Capture", settings: [
-        .env("WINEDEBUG"),
-        .env("DXMT_LOG_LEVEL"),
-        .env("DXMT_LOG_PATH"),
-        .env("DXMT_CAPTURE_FRAME"),
-        .env("DXMT_CAPTURE_EXECUTABLE"),
-        .env("DXMT_CONFIG_FILE"),
-    ]),
-]
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .launch: "Launch"
+        case .frameRate: "Frame Rate & Sync"
+        case .display: "Display"
+        case .upscaling: "Upscaling"
+        case .performance: "Performance"
+        case .renderingFixes: "Rendering Fixes"
+        case .compatibility: "Compatibility"
+        case .wine: "Wine"
+        case .debugging: "Debugging"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .launch: "play.circle"
+        case .frameRate: "speedometer"
+        case .display: "display"
+        case .upscaling: "arrow.up.left.and.arrow.down.right"
+        case .performance: "gauge.with.dots.needle.67percent"
+        case .renderingFixes: "wrench.and.screwdriver"
+        case .compatibility: "puzzlepiece.extension"
+        case .wine: "wineglass"
+        case .debugging: "ladybug"
+        }
+    }
+
+    /// Advanced categories are listed under their own sidebar heading.
+    var isAdvanced: Bool {
+        switch self {
+        case .launch, .frameRate, .display, .upscaling: false
+        default: true
+        }
+    }
+
+    /// Sections of the category's page, in window order.
+    var groups: [SettingGroup] {
+        switch self {
+        case .launch:
+            [SettingGroup(title: "Launch", settings: [
+                .env("DEFAULT_GAME_ARGS"),
+            ])]
+        case .frameRate:
+            [SettingGroup(title: "Frame Rate & Sync", settings: [
+                .dxmt("d3d11.displaySync"),
+                .dxmt("d3d11.preferredMaxFrameRate"),
+                .env("DXMT_FRAME_LIMITER"),
+            ])]
+        case .display:
+            [SettingGroup(title: "Display", settings: [
+                .env("GAMMA_RETINA_MODE"),
+                .env("GAMMA_RETINA_LOGPIXELS"),
+                .dxmt("dxgi.forceSDR"),
+                .env("MTL_HUD_ENABLED"),
+                .dxmt("dxgi.handleAltTab"),
+            ])]
+        case .upscaling:
+            [SettingGroup(title: "Upscaling", settings: [
+                .env("DXMT_ENABLE_NVEXT"),
+                .env("DXMT_METALFX_SPATIAL_SWAPCHAIN"),
+                .dxmt("d3d11.metalSpatialUpscaleFactor"),
+            ])]
+        case .performance:
+            [
+                SettingGroup(title: "Shaders & Encoding", settings: [
+                    .dxmt("d3d11.releaseShaderIR"),
+                    .env("DXMT_REORDER_BLITS"),
+                ]),
+                SettingGroup(title: "Shader Cache", settings: [
+                    .env("DXMT_SHADER_CACHE"),
+                    .env("DXMT_SHADER_CACHE_PATH"),
+                ]),
+            ]
+        case .renderingFixes:
+            [SettingGroup(title: "Rendering Fixes", settings: [
+                .dxmt("d3d11.sampleNaNToZero"),
+                .dxmt("d3d11.defuseFma"),
+                .dxmt("d3d11.ignoreMapFlagNoWait"),
+            ], help: "Default leaves the option to DXMT's own built-in default.")]
+        case .compatibility:
+            [
+                SettingGroup(title: "Graphics", settings: [
+                    .dxmt("d3d11.maxFeatureLevel"),
+                    .dxmt("dxmt.shaderMetalVersion"),
+                ]),
+                SettingGroup(title: "GPU Identity", settings: [
+                    .dxmt("dxgi.customVendorId"),
+                    .dxmt("dxgi.customDeviceId"),
+                    .dxmt("dxgi.customDeviceDesc"),
+                ]),
+            ]
+        case .wine:
+            [SettingGroup(title: "Wine", settings: [
+                .env("WINEMSYNC"),
+                .env("WINEESYNC"),
+                .env("ROSETTA_ADVERTISE_AVX"),
+            ])]
+        case .debugging:
+            [
+                SettingGroup(title: "Logging", settings: [
+                    .env("WINEDEBUG"),
+                    .env("DXMT_LOG_LEVEL"),
+                    .env("DXMT_LOG_PATH"),
+                ]),
+                SettingGroup(title: "Capture", settings: [
+                    .env("DXMT_CAPTURE_FRAME"),
+                    .env("DXMT_CAPTURE_EXECUTABLE"),
+                ]),
+                SettingGroup(title: "Overrides", settings: [
+                    .env("DXMT_CONFIG_FILE"),
+                ]),
+            ]
+        }
+    }
+}
 
 /// Rows shown only while the named app.env switch is on.
 let shownOnlyWhenOn: [String: String] = [

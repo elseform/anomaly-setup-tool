@@ -30,6 +30,7 @@ struct ConfiguratorApp: App {
             ConfiguratorView(model: appDelegate.model, launcher: appDelegate.launcher)
                 .background(WindowCloseGuard(delegate: appDelegate))
         }
-        .windowResizability(.contentSize)
+        .defaultSize(width: Layout.defaultWidth, height: Layout.defaultHeight)
+        .windowResizability(.contentMinSize)
     }
 }
