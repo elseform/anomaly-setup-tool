@@ -19,6 +19,12 @@ struct SchemaEntry {
     let alwaysOn: Bool
     let quoted: Bool
     let defaultValue: String
+    /// Whether a brand-new state writes this optional key. An existing
+    /// app.env without the line keeps it off.
+    var enabledByDefault = false
+
+    /// Whether a new install has the line.
+    var enabledInNewInstall: Bool { alwaysOn || enabledByDefault }
 }
 
 let schema: [SchemaEntry] = [
@@ -38,7 +44,7 @@ let schema: [SchemaEntry] = [
 
     SchemaEntry(key: "DXMT_METALFX_SPATIAL_SWAPCHAIN", kind: .bool, alwaysOn: true, quoted: false, defaultValue: "0"),
     SchemaEntry(key: "DXMT_ENABLE_NVEXT", kind: .bool, alwaysOn: true, quoted: false, defaultValue: "1"),
-    SchemaEntry(key: "DXMT_REORDER_BLITS", kind: .bool, alwaysOn: false, quoted: false, defaultValue: "0"),
+    SchemaEntry(key: "DXMT_REORDER_BLITS", kind: .bool, alwaysOn: false, quoted: false, defaultValue: "1", enabledByDefault: true),
     SchemaEntry(key: "DXMT_FRAME_LIMITER", kind: .bool, alwaysOn: false, quoted: false, defaultValue: "0"),
 
     SchemaEntry(key: "DXMT_SHADER_CACHE", kind: .text, alwaysOn: false, quoted: false, defaultValue: "1"),
@@ -87,12 +93,12 @@ let dxmtConfigKeys: [DXMTConfigEntry] = [
     DXMTConfigEntry(key: "d3d11.ignoreMapFlagNoWait", kind: .bool, choices: nil, defaultValue: "false"),
     DXMTConfigEntry(key: "d3d11.sampleNaNToZero", kind: .bool, choices: nil, defaultValue: "true", enabledByDefault: true),
     DXMTConfigEntry(key: "d3d11.defuseFma", kind: .bool, choices: nil, defaultValue: "false"),
-    DXMTConfigEntry(key: "d3d11.releaseShaderIR", kind: .bool, choices: nil, defaultValue: "false", enabledByDefault: true),
+    DXMTConfigEntry(key: "d3d11.releaseShaderIR", kind: .bool, choices: nil, defaultValue: "true", enabledByDefault: true),
     DXMTConfigEntry(key: "dxmt.shaderMetalVersion", kind: .enumChoice, choices: ["310", "320"], defaultValue: "310"),
     DXMTConfigEntry(key: "dxgi.customVendorId", kind: .text, choices: nil, defaultValue: ""),
     DXMTConfigEntry(key: "dxgi.customDeviceId", kind: .text, choices: nil, defaultValue: ""),
     DXMTConfigEntry(key: "dxgi.customDeviceDesc", kind: .text, choices: nil, defaultValue: ""),
-    DXMTConfigEntry(key: "dxgi.forceSDR", kind: .bool, choices: nil, defaultValue: "false"),
+    DXMTConfigEntry(key: "dxgi.forceSDR", kind: .bool, choices: nil, defaultValue: "true", enabledByDefault: true),
     DXMTConfigEntry(key: "dxgi.handleAltTab", kind: .bool, choices: nil, defaultValue: "false"),
 ]
 
@@ -172,7 +178,7 @@ let friendlyDescriptions: [String: String] = [
     "d3d11.ignoreMapFlagNoWait": "Workaround for games that mishandle a D3D11 no-wait map flag.",
     "d3d11.sampleNaNToZero": "Reads invalid (NaN) texture samples as zero.",
     "d3d11.defuseFma": "Compiles shaders without fused multiply-add.",
-    "d3d11.releaseShaderIR": "Frees parsed shader data after compilation to reduce memory use. DXMT defaults to On; new apps set it Off.",
+    "d3d11.releaseShaderIR": "Frees parsed shader data after compilation to reduce memory use.",
     "dxmt.shaderMetalVersion": "310 is Metal 3.1 (macOS 14+), 320 is Metal 3.2 (macOS 15+). Default uses the newest supported.",
     "dxgi.customVendorId": "GPU vendor ID reported to the game.",
     "dxgi.customDeviceId": "GPU device ID reported to the game.",
