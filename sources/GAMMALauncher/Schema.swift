@@ -94,7 +94,7 @@ let dxmtConfigKeys: [DXMTConfigEntry] = [
     DXMTConfigEntry(key: "d3d11.maxFeatureLevel", kind: .enumChoice, choices: ["9_1", "9_2", "9_3", "10_0", "10_1", "11_0", "11_1", "12_0", "12_1"], defaultValue: "11_1"),
     DXMTConfigEntry(key: "d3d11.preferredMaxFrameRate", kind: .int, choices: nil, defaultValue: "60"),
     // DXMT Tristate: auto follows the game's Present sync interval (vsync-updates builds only).
-    DXMTConfigEntry(key: "d3d11.displaySync", kind: .enumChoice, choices: ["auto", "true", "false"], defaultValue: "true", enabledByDefault: true),
+    DXMTConfigEntry(key: "d3d11.displaySync", kind: .enumChoice, choices: ["auto", "true", "false"], defaultValue: "auto", enabledByDefault: true),
     DXMTConfigEntry(key: "d3d11.metalSpatialUpscaleFactor", kind: .float, choices: nil, defaultValue: "1.0"),
     DXMTConfigEntry(key: "d3d11.ignoreMapFlagNoWait", kind: .bool, choices: nil, defaultValue: "false"),
     DXMTConfigEntry(key: "d3d11.sampleNaNToZero", kind: .bool, choices: nil, defaultValue: "true", enabledByDefault: true),
@@ -118,7 +118,7 @@ let pointerComment = "# Edit via the wrapper app — see it for descriptions and
 // env-var/DXMT_CONFIG key is shown on hover (.help) instead, so this file
 // stays the single place that needs updating when a key's wording changes.
 let friendlyLabels: [String: String] = [
-    "MTL_HUD_ENABLED": "Performance Overlay",
+    "MTL_HUD_ENABLED": "Metal HUD Overlay",
     "MTL_CAPTURE_ENABLED": "GPU Frame Capture",
     "MTL_DEBUG_LAYER": "Metal API Validation",
     "MTL_SHADER_VALIDATION": "Metal Shader Validation",
@@ -139,7 +139,7 @@ let friendlyLabels: [String: String] = [
     "DXMT_SHADER_CACHE": "Shader Cache",
     "DXMT_SHADER_CACHE_PATH": "Shader Cache Path",
     "DXMT_CAPTURE_FRAME": "Frame Capture Trigger",
-    "DXMT_CAPTURE_EXECUTABLE": "Metal Frame Capture Tool",
+    "DXMT_CAPTURE_EXECUTABLE": "Capture Target",
     "DXMT_CONFIG_FILE": "DXMT Config File Override",
 
     "d3d11.maxFeatureLevel": "Max DirectX Feature Level",
