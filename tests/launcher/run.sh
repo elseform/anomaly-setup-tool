@@ -6,6 +6,7 @@ swiftc -parse-as-library -target arm64-apple-macosx26.0 \
   "$ROOT_DIR/sources/GAMMALauncher/Schema.swift" \
   "$ROOT_DIR/sources/GAMMALauncher/EnvFile.swift" \
   "$ROOT_DIR/sources/GAMMALauncher/PathsConfig.swift" \
+  "$ROOT_DIR/sources/GAMMALauncher/EngineInfo.swift" \
   "$ROOT_DIR/sources/GAMMALauncher/ConfiguratorModel.swift" \
   "$ROOT_DIR/sources/GAMMALauncher/LaunchTarget.swift" \
   "$ROOT_DIR/sources/GAMMALauncher/LaunchController.swift" \

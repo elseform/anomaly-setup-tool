@@ -19,4 +19,8 @@ struct InstallLayout {
         let helper = bundleURL.appendingPathComponent("Contents/MacOS/launcher")
         return InstallLayout(wrapperURL: FileManager.default.isExecutableFile(atPath: helper.path) ? bundleURL : nil)
     }
+
+    var engineManifestURL: URL? {
+        wrapperURL?.appendingPathComponent("Contents/Resources/engine/engine-manifest.json")
+    }
 }

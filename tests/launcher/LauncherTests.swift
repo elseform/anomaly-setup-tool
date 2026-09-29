@@ -17,6 +17,13 @@ struct LauncherTests {
         let expected = schema.map(\.key).filter { $0 != "GAMMA_GRAPHICS_BACKEND" } + dxmtConfigKeys.map(\.key)
         check(shown.count == Set(shown).count, "every setting is listed once")
         check(Set(shown) == Set(expected), "every setting has a category")
+        check(SettingCategory.about.groups.isEmpty && SettingCategory.about.sidebarSection == .info, "About lists no settings")
+        let manifest = #"{"versionLabel":"CX26-W11-GAMMA","buildNumber":19,"base":{"crossover":"26.3.0","wine":"11.16"},"dxmt":{"tag":"gamma-2026.09.27.1","commit":"fc8c94702375f19f5161fc970a251aecdfc5d4de"}}"#
+        let info = try JSONDecoder().decode(EngineInfo.self, from: Data(manifest.utf8))
+        check(info.versionLabel == "CX26-W11-GAMMA" && info.buildNumber == 19, "engine label and build")
+        check(info.base?.wine == "11.16" && info.base?.crossover == "26.3.0", "engine base versions")
+        check(info.dxmt?.tag == "gamma-2026.09.27.1" && info.dxmt?.shortCommit == "fc8c947", "dxmt tag and short commit")
+        check(try JSONDecoder().decode(EngineInfo.self, from: Data("{}".utf8)).dxmt == nil, "manifest without dxmt still decodes")
         let wrapper = root.appendingPathComponent("Test.app")
         let resources = wrapper.appendingPathComponent("Contents/Resources")
         let helper = wrapper.appendingPathComponent("Contents/MacOS/launcher")

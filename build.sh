@@ -72,7 +72,7 @@ swiftc \
 
 cp "$INTERMEDIATE_BINARY" "$BINARY"
 
-bash "$ROOT_DIR/scripts/build-launcher.sh" "$RESOURCES_DIR/launcher"
+bash "$ROOT_DIR/scripts/build-launcher.sh" "$RESOURCES_DIR/launcher" "$APP_VERSION"
 
 if [[ "$MODE" != "run" ]] || is_stale "$INTERMEDIATE_ENGINE_BINARY" "$ROOT_DIR"/sources/GAMMASetupCore/*.swift "$ROOT_DIR"/sources/GAMMASetupEngine/main.swift; then
   swiftc \

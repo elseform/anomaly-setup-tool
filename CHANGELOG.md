@@ -53,6 +53,9 @@
   Rendering Fixes, Compatibility, Wine and Debugging under Advanced. A badge on each
   category counts the settings changed from what a new app starts with. Reset to
   Defaults and Launch sit at the bottom of the window.
+- The settings window has an About page with the launcher version, which always matches the
+  GAMMA Setup Tool that built the app, and the engine and DXMT versions bundled in it. The
+  footer links to the GitHub repository and the GAMMA Discord.
 
 - The wizard opens on a welcome page where you select `ModOrganizer.exe` (or another
   executable) and then name the app on the same page. The name is filled in from the
