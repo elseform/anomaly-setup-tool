@@ -115,9 +115,6 @@ struct CreatePage: View {
             stageIcon(for: row.stage)
                 .accessibilityHidden(true)
             Text(row.title)
-            Spacer(minLength: 12)
-            Text(row.detail)
-                .foregroundStyle(.secondary)
         }
         .transaction { transaction in
             transaction.animation = nil
