@@ -219,6 +219,10 @@ struct SettingGroup {
 
 /// A sidebar entry in the window. Every setting except GAMMA_GRAPHICS_BACKEND
 /// appears in exactly one category.
+enum SidebarSection {
+    case game, advanced, info
+}
+
 enum SettingCategory: String, CaseIterable, Identifiable {
     case launch
     case frameRate
@@ -229,6 +233,7 @@ enum SettingCategory: String, CaseIterable, Identifiable {
     case compatibility
     case wine
     case debugging
+    case about
 
     var id: Self { self }
 
@@ -243,6 +248,7 @@ enum SettingCategory: String, CaseIterable, Identifiable {
         case .compatibility: "Compatibility"
         case .wine: "Wine"
         case .debugging: "Debugging"
+        case .about: "About"
         }
     }
 
@@ -257,14 +263,16 @@ enum SettingCategory: String, CaseIterable, Identifiable {
         case .compatibility: "puzzlepiece.extension"
         case .wine: "wineglass"
         case .debugging: "ladybug"
+        case .about: "info.circle"
         }
     }
 
-    /// Advanced categories are listed under their own sidebar heading.
-    var isAdvanced: Bool {
+    /// The sidebar heading the category is listed under.
+    var sidebarSection: SidebarSection {
         switch self {
-        case .launch, .frameRate, .display, .upscaling: false
-        default: true
+        case .launch, .frameRate, .display, .upscaling: .game
+        case .about: .info
+        default: .advanced
         }
     }
 
@@ -329,6 +337,8 @@ enum SettingCategory: String, CaseIterable, Identifiable {
                 .env("WINEESYNC"),
                 .env("ROSETTA_ADVERTISE_AVX"),
             ])]
+        case .about:
+            []
         case .debugging:
             [
                 SettingGroup(title: "Logging", settings: [

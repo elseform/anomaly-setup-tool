@@ -11,6 +11,14 @@ struct CategoryDetail: View {
     private var isLocked: Bool { !model.canEdit || launcher.isLaunching }
 
     var body: some View {
+        if category == .about {
+            AboutView(install: model.install)
+        } else {
+            settingsForm
+        }
+    }
+
+    private var settingsForm: some View {
         Form {
             if let error = model.loadError ?? model.saveError ?? launcher.error {
                 Section {

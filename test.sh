@@ -30,6 +30,13 @@ swiftc \
 printf '\n==> Running build smoke test\n'
 "$ROOT_DIR/build.sh" bundle >/dev/null
 
+printf '\n==> Checking the launcher carries the setup tool version\n'
+TOOL_VERSION="$(sed -n 's/^APP_VERSION="\(.*\)"$/\1/p' "$ROOT_DIR/build.sh")"
+if ! strings -a "$ROOT_DIR/dist/GAMMA Setup Tool.app/Contents/Resources/launcher/GAMMALauncher" | grep -qx "$TOOL_VERSION"; then
+  echo "GAMMALauncher does not carry version $TOOL_VERSION" >&2
+  exit 1
+fi
+
 printf '\n==> Building Swift setup engine for CLI tests\n'
 swiftc \
   -target arm64-apple-macosx26.0 \
