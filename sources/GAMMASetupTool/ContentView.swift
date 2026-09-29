@@ -13,16 +13,10 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
-            ScrollView {
-                currentStepView
-                    .id(step)
-                    .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .trailing)))
-                    .frame(maxWidth: Layout.contentMaxWidth, alignment: .top)
-                    .padding(.horizontal, Layout.contentHorizontalPadding)
-                    .padding(.vertical, Layout.contentVerticalPadding)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            currentStepView
+                .id(step)
+                .transition(reduceMotion ? .opacity : .opacity.combined(with: .move(edge: .trailing)))
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             Divider()
             footer
         }
@@ -59,8 +53,8 @@ extension ContentView {
     }
 
     private var header: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 7) {
+        HStack(alignment: .firstTextBaseline) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(headerText.title)
                     .font(.title2.weight(.semibold))
                 Text(headerText.subtitle)
@@ -70,16 +64,14 @@ extension ContentView {
             Spacer()
             if let progress = stepProgress {
                 Text("Step \(progress.current) of \(progress.total)")
-                    .font(.callout)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
             }
         }
-        .padding(.horizontal, Layout.headerHorizontalPadding)
-        .padding(.top, Layout.headerTopPadding)
-        .padding(.bottom, Layout.headerBottomPadding)
-        .frame(minHeight: Layout.headerHeight, alignment: .topLeading)
-        .background(Color(nsColor: .underPageBackgroundColor))
+        .padding(.horizontal, Layout.titleHorizontalPadding)
+        .padding(.top, 16)
+        .padding(.bottom, 4)
         .transaction { transaction in
             transaction.animation = nil
         }
@@ -109,30 +101,14 @@ extension ContentView {
     }
 
     private var footer: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 12) {
-                footerMetadata
-                Spacer()
-                footerBackButton
-                footerPrimaryButton
-            }
-
-            VStack(spacing: 8) {
-                HStack(spacing: 12) {
-                    footerMetadata
-                    Spacer()
-                }
-                HStack(spacing: 12) {
-                    Spacer()
-                    footerBackButton
-                    footerPrimaryButton
-                }
-            }
+        HStack(spacing: 12) {
+            footerMetadata
+            Spacer()
+            footerBackButton
+            footerPrimaryButton
         }
-        .padding(.horizontal, Layout.footerHorizontalPadding)
-        .padding(.vertical, Layout.footerVerticalPadding)
-        .frame(minHeight: Layout.footerHeight, alignment: .center)
-        .background(Color(nsColor: .underPageBackgroundColor))
+        .padding()
+        .background(.bar)
     }
 
     private var footerMetadata: some View {
@@ -177,10 +153,8 @@ extension ContentView {
     private var footerPrimaryButton: some View {
         switch step {
         case .welcome:
-            Button {
+            Button("Continue") {
                 continueToNextStep()
-            } label: {
-                Label("Continue", systemImage: "arrow.right.circle")
             }
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.defaultAction)
@@ -192,10 +166,8 @@ extension ContentView {
                 createButton(title: "Try again")
             }
         case .complete:
-            Button {
+            Button("Show in Finder and quit") {
                 model.showCreatedAppAndQuit()
-            } label: {
-                Label("Show in Finder and quit", systemImage: "folder")
             }
             .buttonStyle(.borderedProminent)
             .keyboardShortcut(.return, modifiers: [.command])
@@ -204,10 +176,8 @@ extension ContentView {
     }
 
     private func createButton(title: String) -> some View {
-        Button {
+        Button(title) {
             startCreate()
-        } label: {
-            Label(title, systemImage: "play.circle")
         }
         .buttonStyle(.borderedProminent)
         .keyboardShortcut(.return, modifiers: [.command])

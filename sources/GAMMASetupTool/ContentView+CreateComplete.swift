@@ -8,17 +8,18 @@ struct CreatePage: View {
     // MARK: - Body
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if !model.installFailed {
-                Text(currentStageTitle)
-                    .font(.title3.weight(.semibold))
-                    .accessibilityAddTraits(.updatesFrequently)
+        Form {
+            Section {
+                if !model.installFailed {
+                    Text(currentStageTitle)
+                        .font(.headline)
+                        .accessibilityAddTraits(.updatesFrequently)
+                }
+                ProgressView(value: model.progress)
+                    .accessibilityLabel("App creation progress")
             }
 
-            ProgressView(value: model.progress)
-                .accessibilityLabel("App creation progress")
-
-            WizardCard {
+            Section {
                 installStages
             }
 
@@ -26,20 +27,21 @@ struct CreatePage: View {
                 installFailureView
             }
 
-            DisclosureGroup("Show technical details", isExpanded: $model.showOutput) {
-                ScrollView {
-                    Text(model.logText.isEmpty ? "No setup output is available yet." : model.logText)
-                        .font(.system(.body, design: .monospaced))
-                        .textSelection(.enabled)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(8)
+            Section {
+                DisclosureGroup("Show technical details", isExpanded: $model.showOutput) {
+                    ScrollView {
+                        Text(model.logText.isEmpty ? "No setup output is available yet." : model.logText)
+                            .font(.system(.caption, design: .monospaced))
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(8)
+                    }
+                    .frame(height: 130)
+                    .accessibilityLabel("Setup output")
                 }
-                .frame(height: 130)
-                .border(Color(nsColor: .separatorColor))
-                .accessibilityLabel("Setup output")
             }
         }
-        .frame(maxWidth: Layout.setupContentWidth, alignment: .topLeading)
+        .formStyle(.grouped)
     }
 
     private var currentStageTitle: String {
@@ -51,62 +53,45 @@ struct CreatePage: View {
 
     // MARK: - Run Status
 
+    @ViewBuilder
     private var installFailureView: some View {
-        HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "xmark.circle.fill")
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(.red)
-            VStack(alignment: .leading, spacing: 5) {
-                Text("The app couldn't be created")
-                    .font(.callout.weight(.semibold))
-                    .foregroundStyle(.red)
-                if model.savedLogPath.isEmpty {
-                    Text(model.saveVerboseLog
-                         ? "The setup log location is unavailable. Copy the technical details below instead."
-                         : "Saving the setup log was turned off. Copy the technical details below instead.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                } else {
-                    HStack(spacing: 4) {
-                        Text("Log:")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Button {
-                            model.openSavedLog()
-                        } label: {
-                            Text(model.savedLogPath)
-                                .font(.caption)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        }
-                        .buttonStyle(.link)
-                        .help("Open log")
-                    }
-                }
-                Text("Press Try again, or ask for help in the GAMMA Discord and share the log.")
-                    .font(.caption)
+        Section {
+            Label("The app couldn't be created", systemImage: "exclamationmark.triangle.fill")
+                .foregroundStyle(SetupStatusTone.error.color)
+            if model.savedLogPath.isEmpty {
+                Text(model.saveVerboseLog
+                     ? "The setup log location is unavailable. Copy the technical details below instead."
+                     : "Saving the setup log was turned off. Copy the technical details below instead.")
                     .foregroundStyle(.secondary)
-                HStack(spacing: 8) {
+            } else {
+                LabeledContent("Log:") {
+                    Button {
+                        model.openSavedLog()
+                    } label: {
+                        Text(model.savedLogPath)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                    .buttonStyle(.link)
+                    .help("Open log")
+                }
+            }
+            LabeledContent {
+                HStack(spacing: 12) {
                     Button("Copy details", action: model.copyLog)
                         .disabled(model.logText.isEmpty)
                     Link(SupportCopy.discordTitle, destination: SupportCopy.discordURL)
                         .help(SupportCopy.discordHelp)
                 }
-                .controlSize(.small)
-                .padding(.top, 2)
+            } label: {
+                RowLabel(title: "Press Try again, or ask for help in the GAMMA Discord and share the log.")
             }
         }
-        .padding(.top, 2)
     }
 
     private var installStages: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            ForEach(installStageRows, id: \.stage) { row in
-                installStageRow(row: row)
-            }
-        }
-        .transaction { transaction in
-            transaction.animation = nil
+        ForEach(installStageRows, id: \.stage) { row in
+            installStageRow(row: row)
         }
     }
 
@@ -126,20 +111,17 @@ struct CreatePage: View {
     }
 
     private func installStageRow(row: (stage: Int, title: String, detail: String)) -> some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(spacing: 8) {
             stageIcon(for: row.stage)
                 .accessibilityHidden(true)
             Text(row.title)
-                .font(.caption.weight(.semibold))
-            if !row.detail.isEmpty {
-                Text(row.detail)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 0)
+            Spacer(minLength: 12)
+            Text(row.detail)
+                .foregroundStyle(.secondary)
         }
-        .frame(minHeight: 16)
+        .transaction { transaction in
+            transaction.animation = nil
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(row.detail.isEmpty ? row.title : "\(row.title), \(row.detail)")
         .accessibilityValue(stageStatus(for: row.stage))
@@ -156,19 +138,19 @@ struct CreatePage: View {
         return Group {
             if model.installFailed && index == model.installStageIndex {
                 Image(systemName: "xmark.circle.fill")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(SetupStatusTone.error.color)
             } else if index <= model.installStageCompletedIndex {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(SetupStatusTone.success.color)
             } else if index == model.installStageIndex {
                 Image(systemName: "arrow.triangle.2.circlepath.circle.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(.tint)
             } else {
                 Image(systemName: "circle")
                     .foregroundStyle(.tertiary)
             }
         }
-        .frame(width: 16)
+        .frame(width: 18)
     }
 }
 
@@ -178,74 +160,57 @@ struct CompletePage: View {
     // MARK: - Body
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            WizardCard {
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack(spacing: 10) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.title2.weight(.semibold))
-                            .foregroundStyle(.green)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(model.outputAppName)
-                                .font(.headline)
-                            Text(model.outputAppPath)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                                .textSelection(.enabled)
-                        }
+        Form {
+            Section {
+                Label {
+                    RowLabel(title: model.outputAppName, detail: model.outputAppPath, detailIsPath: true)
+                } icon: {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(SetupStatusTone.success.color)
+                }
+                USVFSStatusRow(outcome: model.usvfsPlanForRun, finished: true)
+            }
+
+            Section("Next steps") {
+                ForEach(nextSteps, id: \.number) { step in
+                    Label {
+                        Text(step.text)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } icon: {
+                        Image(systemName: "\(step.number).circle.fill")
+                            .foregroundStyle(.tint)
                     }
-                    USVFSStatusRow(outcome: model.usvfsPlanForRun, finished: true)
                 }
             }
 
-            WizardCard {
-                VStack(alignment: .leading, spacing: 10) {
-                    CardHeading(title: "Next steps")
-                    ForEach(nextSteps, id: \.number) { step in
-                        HStack(alignment: .firstTextBaseline, spacing: 10) {
-                            Image(systemName: "\(step.number).circle.fill")
-                                .foregroundStyle(.tint)
-                                .accessibilityHidden(true)
-                            Text(step.text)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                    }
-                }
-                .font(.callout)
-            }
-
-            WizardCard {
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
-                        Text(model.saveVerboseLog
+            Section {
+                LabeledContent {
+                    Link(SupportCopy.discordTitle, destination: SupportCopy.discordURL)
+                        .help(SupportCopy.discordHelp)
+                } label: {
+                    RowLabel(title: model.saveVerboseLog
                              ? "Problems? Ask in the GAMMA Discord and share your setup log."
                              : "Problems? Ask in the GAMMA Discord.")
-                        Link(SupportCopy.discordTitle, destination: SupportCopy.discordURL)
-                            .help(SupportCopy.discordHelp)
-                    }
-                    if model.saveVerboseLog {
-                        if model.savedLogPath.isEmpty {
-                            Text("Setup log location unavailable")
-                                .foregroundStyle(.secondary)
-                        } else {
-                            Button {
-                                model.openSavedLog()
-                            } label: {
-                                Text(model.savedLogPath)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                            }
-                            .buttonStyle(.link)
-                            .help("Open setup log")
+                }
+                if model.saveVerboseLog {
+                    if model.savedLogPath.isEmpty {
+                        Text("Setup log location unavailable")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Button {
+                            model.openSavedLog()
+                        } label: {
+                            Text(model.savedLogPath)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
                         }
+                        .buttonStyle(.link)
+                        .help("Open setup log")
                     }
                 }
-                .font(.callout)
             }
         }
-        .frame(maxWidth: Layout.completeMaxWidth, alignment: .topLeading)
+        .formStyle(.grouped)
     }
 
     /// The generated wrapper owns both settings and launching.

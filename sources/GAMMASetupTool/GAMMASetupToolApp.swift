@@ -16,5 +16,6 @@ struct GAMMASetupToolApp: App {
             ContentView()
         }
         .defaultSize(width: Layout.windowDefaultWidth, height: Layout.windowDefaultHeight)
+        .windowResizability(.contentMinSize)
     }
 }
