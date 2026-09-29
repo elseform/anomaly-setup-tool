@@ -18,10 +18,12 @@ struct LauncherTests {
         check(shown.count == Set(shown).count, "every setting is listed once")
         check(Set(shown) == Set(expected), "every setting has a category")
         check(SettingCategory.about.groups.isEmpty && SettingCategory.about.sidebarSection == .info, "About lists no settings")
-        let manifest = #"{"versionLabel":"CX26-W11-GAMMA","buildNumber":19,"base":{"crossover":"26.3.0","wine":"11.16"},"dxmt":{"tag":"gamma-2026.09.27.1","commit":"fc8c94702375f19f5161fc970a251aecdfc5d4de"}}"#
+        let manifest = #"{"versionLabel":"CX26-W11-GAMMA","buildNumber":19,"engineId":"cx26-w11-gamma","base":{"crossover":"26.3.0","wine":"11.16"},"dxmt":{"tag":"gamma-2026.09.27.1","commit":"fc8c94702375f19f5161fc970a251aecdfc5d4de"}}"#
         let info = try JSONDecoder().decode(EngineInfo.self, from: Data(manifest.utf8))
         check(info.versionLabel == "CX26-W11-GAMMA" && info.buildNumber == 19, "engine label and build")
-        check(info.base?.wine == "11.16" && info.base?.crossover == "26.3.0", "engine base versions")
+        check(info.base?.wine == "11.16", "engine wine version")
+        check(info.releaseURL?.absoluteString == "https://github.com/elseform/gamma-wine-engine/releases/tag/engine-cx26-w11-gamma-19", "engine release link")
+        check(info.dxmt?.releaseURL?.absoluteString == "https://github.com/elseform/dxmt/releases/tag/gamma-2026.09.27.1", "dxmt release link")
         check(info.dxmt?.tag == "gamma-2026.09.27.1" && info.dxmt?.shortCommit == "fc8c947", "dxmt tag and short commit")
         check(try JSONDecoder().decode(EngineInfo.self, from: Data("{}".utf8)).dxmt == nil, "manifest without dxmt still decodes")
         let wrapper = root.appendingPathComponent("Test.app")
