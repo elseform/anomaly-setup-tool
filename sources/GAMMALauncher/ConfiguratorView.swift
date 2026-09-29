@@ -150,7 +150,7 @@ struct ConfiguratorView: View {
             .confirmationDialog("Reset all settings to their defaults?", isPresented: $confirmReset) {
                 Button("Reset", role: .destructive, action: model.resetToDefaults)
             } message: {
-                Text("Every setting, including launch arguments, goes back to what a new install starts with.")
+                Text("Every setting, including launch arguments, goes back to what a new wrapper starts with.")
             }
             Button(launcher.isLaunching ? "Launching…" : "Launch") { launcher.launch(model: model) }
                 .buttonStyle(.borderedProminent)

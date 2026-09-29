@@ -22,7 +22,7 @@ final class LaunchController {
         do {
             guard model.persist() else { throw LauncherError.message(model.saveError ?? "Could not save settings.") }
             guard let wrapper = model.install.wrapperURL, let prefix = model.prefixURL else {
-                throw LauncherError.message("Open this application from an installed wrapper.")
+                throw LauncherError.message("Open this from an installed wrapper.")
             }
             _ = try LaunchTarget.resolve(model.targetPath, prefix: prefix)
             let directory = unquote(model.state.passthrough["EXE_RUN_DIR"] ?? "")
