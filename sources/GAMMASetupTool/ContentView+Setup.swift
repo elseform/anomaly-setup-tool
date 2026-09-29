@@ -40,7 +40,7 @@ struct SetupPage: View {
     // MARK: - Summary
 
     private var summary: some View {
-        Section("What setup will do") {
+        Section {
             Label {
                 Text("Create **\(model.outputAppName)** in ~/Applications")
             } icon: {
@@ -62,6 +62,8 @@ struct SetupPage: View {
                     .foregroundStyle(.tint)
             }
             USVFSStatusRow(outcome: model.usvfsPlan)
+        } header: {
+            Text("What setup will do")
         }
     }
 
@@ -71,7 +73,7 @@ struct SetupPage: View {
     // newest published gamma-wine-engine release is resolved and downloaded
     // automatically; a path here is a local archive, used as is.
     private var engineArchiveControls: some View {
-        Section("Wine Engine") {
+        Section {
             Text(model.wineEngineArchivePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                  ? "Downloads the latest release from GitHub."
                  : "Uses your local engine archive as it is.")
@@ -100,6 +102,8 @@ struct SetupPage: View {
                     openPanel = .localEngine
                 }
             }
+        } header: {
+            Text("Wine Engine")
         }
     }
 
@@ -142,8 +146,10 @@ struct SetupPage: View {
                     SectionNote("Setup verifies every file against the engine’s required checksum. Missing files are downloaded automatically.")
                 }
             } label: {
-                RowLabel(title: "Dependencies", detail: "Downloaded automatically")
+                Text("Downloaded automatically")
             }
+        } header: {
+            Text("Dependencies")
         }
         .task(id: model.redistInstallerDirectory) {
             redistInstallerStatuses = RedistInstallers.statuses(
@@ -156,12 +162,14 @@ struct SetupPage: View {
 
     private var advancedControls: some View {
         Section {
-            DisclosureGroup("Advanced", isExpanded: isOpen(.advanced)) {
+            DisclosureGroup("Show advanced options", isExpanded: isOpen(.advanced)) {
                 DisclosureBody {
                     driveMappingControls
                     Toggle(SetupOptionCopy.saveDetailedLog, isOn: $model.saveVerboseLog)
                 }
             }
+        } header: {
+            Text("Advanced")
         }
     }
 
