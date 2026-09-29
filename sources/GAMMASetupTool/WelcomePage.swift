@@ -26,7 +26,7 @@ struct WelcomePage: View {
                 appNameSection
             }
         }
-        .formStyle(.grouped)
+        .pageForm()
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: model.selectedLaunchExecutableFound)
         .task(id: model.selectedLaunchExecutablePath) {
             model.refreshUSVFSPlan()
