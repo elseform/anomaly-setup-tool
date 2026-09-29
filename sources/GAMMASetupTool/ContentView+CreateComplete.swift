@@ -182,27 +182,31 @@ struct CompletePage: View {
 
             Section {
                 LabeledContent {
-                    Link(SupportCopy.discordTitle, destination: SupportCopy.discordURL)
-                        .help(SupportCopy.discordHelp)
+                    HStack(spacing: 12) {
+                        Link(SupportCopy.discordTitle, destination: SupportCopy.discordURL)
+                            .help(SupportCopy.discordHelp)
+                        Link(SupportCopy.githubTitle, destination: SupportCopy.githubURL)
+                            .help(SupportCopy.githubHelp)
+                    }
                 } label: {
-                    RowLabel(title: model.saveVerboseLog
-                             ? "Problems? Ask in the GAMMA Discord and share your setup log."
-                             : "Problems? Ask in the GAMMA Discord.")
+                    RowLabel(title: "There may be some additional mods required for optimal in-game performance. Check Discord or GitHub for more info.")
                 }
                 if model.saveVerboseLog {
                     if model.savedLogPath.isEmpty {
                         Text("Setup log location unavailable")
                             .foregroundStyle(.secondary)
                     } else {
-                        Button {
-                            model.openSavedLog()
-                        } label: {
-                            Text(model.savedLogPath)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
+                        LabeledContent("Setup log") {
+                            Button {
+                                model.openSavedLog()
+                            } label: {
+                                Text(model.savedLogPath)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                            }
+                            .buttonStyle(.link)
+                            .help("Open setup log")
                         }
-                        .buttonStyle(.link)
-                        .help("Open setup log")
                     }
                 }
             }
@@ -218,8 +222,6 @@ struct CompletePage: View {
         return [
             (1, "Open **\(model.outputAppName)** from ~/Applications. Show in Finder below takes you there."),
             (2, launch),
-            (3, "The first start can take longer while shaders are prepared."),
-            (4, "Reopen **\(model.outputAppName)** whenever you want to change settings or choose another executable."),
         ]
     }
 }

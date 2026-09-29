@@ -7,9 +7,10 @@ import GAMMASetupCore
 struct SetupPage: View {
     @Bindable var model: AppModel
 
-    @State private var showLocalEngine = false
-    @State private var showRedistInstallers = false
-    @State private var showAdvanced = false
+    /// The one open disclosure. Only one opens at a time so the page always
+    /// fits the fixed window.
+    private enum Panel { case localEngine, redistInstallers, advanced }
+    @State private var openPanel: Panel?
     @State private var redistInstallerStatuses: [RedistInstallers.Status] = []
 
     // MARK: - Body
@@ -30,6 +31,10 @@ struct SetupPage: View {
         .task(id: model.selectedLaunchExecutablePath) {
             model.refreshUSVFSPlan()
         }
+    }
+
+    private func isOpen(_ panel: Panel) -> Binding<Bool> {
+        Binding(get: { openPanel == panel }, set: { openPanel = $0 ? panel : nil })
     }
 
     // MARK: - Summary
@@ -71,7 +76,7 @@ struct SetupPage: View {
                  ? "Downloads the latest release from GitHub."
                  : "Uses your local engine archive as it is.")
                 .foregroundStyle(.secondary)
-            DisclosureGroup("Use a local engine archive instead", isExpanded: $showLocalEngine) {
+            DisclosureGroup("Use a local engine archive instead", isExpanded: isOpen(.localEngine)) {
                 HStack(spacing: 8) {
                     TextField("Automatic download", text: $model.wineEngineArchivePath)
                         .accessibilityLabel("Engine archive")
@@ -90,7 +95,7 @@ struct SetupPage: View {
             }
             .onAppear {
                 if !model.wineEngineArchivePath.isEmpty {
-                    showLocalEngine = true
+                    openPanel = .localEngine
                 }
             }
         }
@@ -106,15 +111,16 @@ struct SetupPage: View {
     // no decision.
     private var redistInstallerControls: some View {
         Section {
-            DisclosureGroup(isExpanded: $showRedistInstallers) {
+            DisclosureGroup(isExpanded: isOpen(.redistInstallers)) {
                 ForEach(redistInstallerStatuses, id: \.installer.filename) { status in
                     Label {
-                        RowLabel(
-                            title: status.installer.title,
-                            detail: status.isPresent
-                                ? "Found locally; verified during setup"
-                                : "Will be downloaded (\(status.installer.sizeLabel))"
-                        )
+                        LabeledContent(status.installer.title) {
+                            Text(status.isPresent
+                                 ? "Found locally; verified during setup"
+                                 : "Will be downloaded (\(status.installer.sizeLabel))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     } icon: {
                         Image(systemName: status.isPresent ? "checkmark.circle.fill" : "arrow.down.circle")
                             .foregroundStyle(status.isPresent ? SetupStatusTone.success.color : .secondary)
@@ -146,7 +152,7 @@ struct SetupPage: View {
 
     private var advancedControls: some View {
         Section {
-            DisclosureGroup("Advanced", isExpanded: $showAdvanced) {
+            DisclosureGroup("Advanced", isExpanded: isOpen(.advanced)) {
                 driveMappingControls
                 Toggle(SetupOptionCopy.saveDetailedLog, isOn: $model.saveVerboseLog)
             }
