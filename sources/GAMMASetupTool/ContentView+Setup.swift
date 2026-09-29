@@ -15,24 +15,18 @@ struct SetupPage: View {
     // MARK: - Body
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            WizardCard {
-                summary
+        let ready = model.selectedLaunchExecutableFound && !model.isRunning
+        Form {
+            summary
+            Group {
+                engineArchiveControls
+                redistInstallerControls
+                advancedControls
             }
-
-            WizardCard {
-                VStack(alignment: .leading, spacing: 16) {
-                    engineArchiveControls
-                    Divider()
-                    redistInstallerControls
-                    Divider()
-                    advancedControls
-                }
-            }
-            .disabled(!model.selectedLaunchExecutableFound || model.isRunning)
-            .opacity((model.selectedLaunchExecutableFound && !model.isRunning) ? 1 : 0.45)
+            .disabled(!ready)
+            .opacity(ready ? 1 : 0.45)
         }
-        .frame(maxWidth: Layout.setupContentWidth, alignment: .topLeading)
+        .formStyle(.grouped)
         .task(id: model.selectedLaunchExecutablePath) {
             model.refreshUSVFSPlan()
         }
@@ -41,8 +35,7 @@ struct SetupPage: View {
     // MARK: - Summary
 
     private var summary: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            CardHeading(title: "What setup will do")
+        Section("What setup will do") {
             Label {
                 Text("Create **\(model.outputAppName)** in ~/Applications")
             } icon: {
@@ -65,43 +58,35 @@ struct SetupPage: View {
             }
             USVFSStatusRow(outcome: model.usvfsPlan)
         }
-        .font(.callout)
     }
+
+    // MARK: - Engine archive
 
     // Left empty (the default), the
     // newest published gamma-wine-engine release is resolved and downloaded
     // automatically; a path here is a local archive, used as is.
     private var engineArchiveControls: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            CardHeading(title: "Wine engine")
+        Section("Wine engine") {
             Text(model.wineEngineArchivePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                  ? "Get latest release from github."
                  : "Using your local engine file as is.")
-                .font(.callout)
                 .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
             DisclosureGroup("Use local engine pack instead", isExpanded: $showLocalEngine) {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 8) {
-                        TextField("Automatic download", text: $model.wineEngineArchivePath)
-                            .textFieldStyle(.roundedBorder)
-                            .accessibilityLabel("Engine archive")
-                        Button("Choose…") {
-                            model.chooseWineEngineArchive()
-                        }
-                        .accessibilityLabel("Choose engine archive")
+                HStack(spacing: 8) {
+                    TextField("Automatic download", text: $model.wineEngineArchivePath)
+                        .accessibilityLabel("Engine archive")
+                    Button("Choose…") {
+                        model.chooseWineEngineArchive()
                     }
-                    Text("Pick .tar.xz engine archive.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    if !model.wineEngineArchivePath.isEmpty {
-                        Button("Use automatic download") {
-                            model.wineEngineArchivePath = ""
-                        }
-                        .buttonStyle(.link)
-                    }
+                    .accessibilityLabel("Choose engine archive")
                 }
-                .padding(.top, 6)
+                SectionNote("Pick .tar.xz engine archive.")
+                if !model.wineEngineArchivePath.isEmpty {
+                    Button("Use automatic download") {
+                        model.wineEngineArchivePath = ""
+                    }
+                    .buttonStyle(.link)
+                }
             }
             .onAppear {
                 if !model.wineEngineArchivePath.isEmpty {
@@ -120,49 +105,34 @@ struct SetupPage: View {
     // run stays offline. Collapsed by default, since the default path needs
     // no decision.
     private var redistInstallerControls: some View {
-        DisclosureGroup(isExpanded: $showRedistInstallers) {
-            VStack(alignment: .leading, spacing: 8) {
+        Section {
+            DisclosureGroup(isExpanded: $showRedistInstallers) {
                 ForEach(redistInstallerStatuses, id: \.installer.filename) { status in
                     Label {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(status.installer.title)
-                                .font(.callout)
-                            Text(status.isPresent
-                                 ? "Found locally; verified during setup"
-                                 : "Will be downloaded (\(status.installer.sizeLabel))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                        RowLabel(
+                            title: status.installer.title,
+                            detail: status.isPresent
+                                ? "Found locally; verified during setup"
+                                : "Will be downloaded (\(status.installer.sizeLabel))"
+                        )
                     } icon: {
                         Image(systemName: status.isPresent ? "checkmark.circle.fill" : "arrow.down.circle")
-                            .foregroundStyle(status.isPresent ? .green : .secondary)
+                            .foregroundStyle(status.isPresent ? SetupStatusTone.success.color : .secondary)
                     }
                     .accessibilityElement(children: .combine)
                 }
-
                 HStack(spacing: 8) {
                     TextField("Optional folder with downloaded installers",
                               text: $model.redistInstallerDirectory)
-                        .textFieldStyle(.roundedBorder)
                         .accessibilityLabel("Downloaded installers folder")
                     Button("Choose…") {
                         model.chooseRedistInstallerDirectory()
                     }
                     .accessibilityLabel("Choose downloaded installers folder")
                 }
-
-                Text("Setup verifies every file against the engine’s required checksum. Missing files are downloaded automatically.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, 6)
-        } label: {
-            VStack(alignment: .leading, spacing: 2) {
-                CardHeading(title: "Dependencies")
-                Text("Downloaded automatically")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                SectionNote("Setup verifies every file against the engine’s required checksum. Missing files are downloaded automatically.")
+            } label: {
+                RowLabel(title: "Dependencies", detail: "Downloaded automatically")
             }
         }
         .task(id: model.redistInstallerDirectory) {
@@ -175,46 +145,26 @@ struct SetupPage: View {
     // MARK: - Advanced
 
     private var advancedControls: some View {
-        DisclosureGroup(isExpanded: $showAdvanced) {
-            VStack(alignment: .leading, spacing: 14) {
+        Section {
+            DisclosureGroup("Advanced", isExpanded: $showAdvanced) {
                 driveMappingControls
                 Toggle(SetupOptionCopy.saveDetailedLog, isOn: $model.saveVerboseLog)
             }
-            .padding(.top, 6)
-        } label: {
-            CardHeading(title: "Advanced")
         }
     }
 
     // MARK: - Drive Mapping
 
+    @ViewBuilder
     private var driveMappingControls: some View {
-        VStack(alignment: .leading, spacing: Layout.cardContentSpacing) {
-            Text("Drive mappings")
-                .font(.subheadline.weight(.semibold))
-            Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 7) {
-                GridRow {
-                    Text("Game root (G:)")
-                        .foregroundStyle(.secondary)
-                    Text(model.configuration.optionalGDriveRoot)
-                        .font(.system(.callout, design: .monospaced))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .textSelection(.enabled)
-                }
-                GridRow {
-                    Text("Mac root (Z:)")
-                        .foregroundStyle(.secondary)
-                    Text("/")
-                        .font(.system(.callout, design: .monospaced))
-                        .textSelection(.enabled)
-                }
-            }
-            .font(.callout)
-
-            Text("G: uses the parent of the selected executable’s folder. Z: provides access to your Mac’s filesystem. Existing ModOrganizer paths must still point to the correct folders.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
+        LabeledContent("Game root (G:)") {
+            Text(model.configuration.optionalGDriveRoot)
+                .textSelection(.enabled)
         }
+        LabeledContent("Mac root (Z:)") {
+            Text("/")
+                .textSelection(.enabled)
+        }
+        SectionNote("G: uses the parent of the selected executable’s folder. Z: provides access to your Mac’s filesystem. Existing ModOrganizer paths must still point to the correct folders.")
     }
 }
