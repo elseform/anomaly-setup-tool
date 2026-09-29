@@ -132,9 +132,17 @@ struct ConfiguratorView: View {
     }
 
     private var bottomBar: some View {
-        HStack {
-            Text("Settings save automatically.").font(.caption).foregroundStyle(.secondary)
+        HStack(spacing: 12) {
+            Link(Links.githubTitle, destination: Links.githubURL)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .help(Links.githubHelp)
+            Link(Links.discordTitle, destination: Links.discordURL)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .help(Links.discordHelp)
             Spacer()
+            Text("Settings save automatically.").font(.caption).foregroundStyle(.tertiary)
             Button("Reset to Defaults…", role: .destructive) {
                 confirmReset = true
             }
