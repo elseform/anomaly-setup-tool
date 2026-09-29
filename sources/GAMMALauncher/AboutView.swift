@@ -14,24 +14,28 @@ struct AboutView: View {
                 row("Version", BuildInfo.version)
             }
             Section("Engine") {
-                row("Version", engine?.versionLabel)
+                row("Version", engine?.versionLabel, link: engine?.releaseURL)
                 row("Build", engine?.buildNumber.map(String.init))
                 row("Wine", engine?.base?.wine)
-                row("CrossOver", engine?.base?.crossover)
             }
             Section("DXMT") {
-                row("Release", engine?.dxmt?.tag)
+                row("Release", engine?.dxmt?.tag, link: engine?.dxmt?.releaseURL)
                 row("Commit", engine?.dxmt?.shortCommit)
             }
         }
         .formStyle(.grouped)
     }
 
-    private func row(_ title: String, _ value: String?) -> some View {
+    private func row(_ title: String, _ value: String?, link: URL? = nil) -> some View {
         LabeledContent(title) {
-            Text(value ?? "Unknown")
-                .foregroundStyle(value == nil ? .secondary : .primary)
-                .textSelection(.enabled)
+            if let value, let link {
+                Link(value, destination: link)
+                    .help("Open this release on GitHub")
+            } else {
+                Text(value ?? "Unknown")
+                    .foregroundStyle(value == nil ? .secondary : .primary)
+                    .textSelection(.enabled)
+            }
         }
     }
 }
