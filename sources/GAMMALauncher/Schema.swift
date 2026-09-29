@@ -56,6 +56,12 @@ let schema: [SchemaEntry] = [
     SchemaEntry(key: "DXMT_CAPTURE_EXECUTABLE", kind: .text, alwaysOn: false, quoted: false, defaultValue: ""),
     SchemaEntry(key: "DXMT_CONFIG_FILE", kind: .text, alwaysOn: false, quoted: false, defaultValue: ""),
 
+    // Apple's Metal debugging switches, read when the Metal device is created.
+    // MTL_CAPTURE_ENABLED is what lets DXMT_CAPTURE_* take a GPU trace at all.
+    SchemaEntry(key: "MTL_CAPTURE_ENABLED", kind: .bool, alwaysOn: false, quoted: false, defaultValue: "0"),
+    SchemaEntry(key: "MTL_DEBUG_LAYER", kind: .bool, alwaysOn: false, quoted: false, defaultValue: "0"),
+    SchemaEntry(key: "MTL_SHADER_VALIDATION", kind: .bool, alwaysOn: false, quoted: false, defaultValue: "0"),
+
     // DXMT_CONFIG itself is handled separately (dxmtConfig / dxmtConfigKeys below).
 ]
 
@@ -113,6 +119,9 @@ let pointerComment = "# Edit via the wrapper app — see it for descriptions and
 // stays the single place that needs updating when a key's wording changes.
 let friendlyLabels: [String: String] = [
     "MTL_HUD_ENABLED": "Performance Overlay",
+    "MTL_CAPTURE_ENABLED": "GPU Frame Capture",
+    "MTL_DEBUG_LAYER": "Metal API Validation",
+    "MTL_SHADER_VALIDATION": "Metal Shader Validation",
     "WINEMSYNC": "Msync",
     "WINEESYNC": "Esync",
     "ROSETTA_ADVERTISE_AVX": "Advertise AVX Under Rosetta",
@@ -151,6 +160,9 @@ let friendlyLabels: [String: String] = [
 
 let friendlyDescriptions: [String: String] = [
     "MTL_HUD_ENABLED": "Shows Apple's Metal HUD with frame rate and GPU stats.",
+    "MTL_CAPTURE_ENABLED": "Allows Metal GPU trace capture. Also needs the Metal Frame Capture Tool; F10 then captures a frame. Traces are large, around 15 GB.",
+    "MTL_DEBUG_LAYER": "Checks Metal API calls for misuse. Cheap, but not free; leave off for normal play.",
+    "MTL_SHADER_VALIDATION": "Checks shader memory access on the GPU. Slow; errors go to the system log (Console). Leave off for normal play.",
     "WINEMSYNC": "Faster thread synchronization in Wine. Turn off only to troubleshoot.",
     "WINEESYNC": "Fallback thread synchronization in Wine. Turn off only to troubleshoot.",
     "ROSETTA_ADVERTISE_AVX": "Tells the game the CPU supports AVX under Rosetta.",
@@ -167,8 +179,8 @@ let friendlyDescriptions: [String: String] = [
     "DXMT_LOG_PATH": "Folder for DXMT log files. \"none\" writes no log files.",
     "DXMT_SHADER_CACHE": "Set to 0 to turn off DXMT's shader cache.",
     "DXMT_SHADER_CACHE_PATH": "Absolute path of the folder for the shader cache.",
-    "DXMT_CAPTURE_FRAME": "Captures this frame number automatically.",
-    "DXMT_CAPTURE_EXECUTABLE": "Executable name, without extension, to allow Metal frame capture for. F10 captures a frame.",
+    "DXMT_CAPTURE_FRAME": "Captures this frame number automatically, without pressing F10.",
+    "DXMT_CAPTURE_EXECUTABLE": "Executable name, without extension, to allow Metal frame capture for, for example AnomalyDX11.",
     "DXMT_CONFIG_FILE": "Path of a dxmt.conf file to read DXMT options from.",
 
     "d3d11.maxFeatureLevel": "Highest DirectX 11 feature level reported to the game.",
@@ -274,7 +286,6 @@ enum SettingCategory: String, CaseIterable, Identifiable {
                 .env("GAMMA_RETINA_MODE"),
                 .env("GAMMA_RETINA_LOGPIXELS"),
                 .dxmt("dxgi.forceSDR"),
-                .env("MTL_HUD_ENABLED"),
                 .dxmt("dxgi.handleAltTab"),
             ])]
         case .upscaling:
@@ -325,10 +336,14 @@ enum SettingCategory: String, CaseIterable, Identifiable {
                     .env("DXMT_LOG_LEVEL"),
                     .env("DXMT_LOG_PATH"),
                 ]),
-                SettingGroup(title: "Capture", settings: [
-                    .env("DXMT_CAPTURE_FRAME"),
+                SettingGroup(title: "Metal: Debug", settings: [
+                    .env("MTL_HUD_ENABLED"),
+                    .env("MTL_CAPTURE_ENABLED"),
                     .env("DXMT_CAPTURE_EXECUTABLE"),
-                ]),
+                    .env("DXMT_CAPTURE_FRAME"),
+                    .env("MTL_DEBUG_LAYER"),
+                    .env("MTL_SHADER_VALIDATION"),
+                ], help: "Capture, API validation and shader validation are read when the game starts. Validation slows the game down."),
                 SettingGroup(title: "Overrides", settings: [
                     .env("DXMT_CONFIG_FILE"),
                 ]),
@@ -339,6 +354,8 @@ enum SettingCategory: String, CaseIterable, Identifiable {
 
 /// Rows shown only while the named app.env switch is on.
 let shownOnlyWhenOn: [String: String] = [
+    "DXMT_CAPTURE_EXECUTABLE": "MTL_CAPTURE_ENABLED",
+    "DXMT_CAPTURE_FRAME": "MTL_CAPTURE_ENABLED",
     "GAMMA_RETINA_LOGPIXELS": "GAMMA_RETINA_MODE",
     "d3d11.metalSpatialUpscaleFactor": "DXMT_METALFX_SPATIAL_SWAPCHAIN",
 ]

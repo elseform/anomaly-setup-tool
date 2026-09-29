@@ -70,6 +70,13 @@ struct LauncherTests {
         check(model.state.dxmtConfig["d3d11.releaseShaderIR"]?.enabled == true && model.state.dxmtConfig["d3d11.releaseShaderIR"]?.value == "true", "defaults release shader IR")
         check(model.state.dxmtConfig["dxgi.forceSDR"]?.enabled == true && model.state.dxmtConfig["dxgi.forceSDR"]?.value == "true", "defaults force SDR")
         check(!model.isOn("MTL_HUD_ENABLED") && !model.isOn("DXMT_FRAME_LIMITER"), "defaults keep HUD and limiter off")
+        check(!model.isOn("MTL_CAPTURE_ENABLED") && !model.isOn("MTL_DEBUG_LAYER") && !model.isOn("MTL_SHADER_VALIDATION"), "defaults keep Metal debugging off")
+        check(!model.isVisible(.env("DXMT_CAPTURE_EXECUTABLE")) && !model.isVisible(.env("DXMT_CAPTURE_FRAME")), "capture targets hidden while capture is off")
+        model.setVar("MTL_CAPTURE_ENABLED", enabled: true, value: "1")
+        check(model.isVisible(.env("DXMT_CAPTURE_EXECUTABLE")) && model.isVisible(.env("DXMT_CAPTURE_FRAME")), "capture targets shown once capture is on")
+        check(loadState(configFile: config.path).vars["MTL_CAPTURE_ENABLED"]?.enabled == true, "capture switch saved to app.env")
+        check(SettingCategory.debugging.groups.contains { $0.title == "Metal: Debug" && $0.settings.contains(.env("MTL_HUD_ENABLED")) }, "Metal: Debug group holds the HUD")
+        model.setVar("MTL_CAPTURE_ENABLED", enabled: false, value: "0")
         check(model.state.dxmtConfig["d3d11.preferredMaxFrameRate"]?.enabled == false, "defaults leave frame cap off")
         var starts = 0
         var exits = 0
