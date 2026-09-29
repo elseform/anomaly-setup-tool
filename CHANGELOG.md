@@ -41,6 +41,12 @@
 - The app's settings add **Frame Limiter** (`DXMT_FRAME_LIMITER`), which paces the game itself to
   Preferred Max Frame Rate or half the display's refresh rate. Both now sit in Frame Rate &
   Sync. The limiter needs a DXMT release that includes it.
+- Debugging has a **Metal: Debug** group that gathers the Performance Overlay (moved from
+  Display), the frame capture settings, and new **GPU Frame Capture** (`MTL_CAPTURE_ENABLED`),
+  **Metal API Validation** (`MTL_DEBUG_LAYER`) and **Metal Shader Validation**
+  (`MTL_SHADER_VALIDATION`) switches. Capturing a GPU trace needs GPU Frame Capture on as
+  well as a capture executable, which the window did not offer before; the executable and
+  frame rows appear once capture is on. All three switches start off.
 - The app's settings window is wider and resizable, with a sidebar of categories instead
   of one long list: Launch, Frame Rate & Sync, Display and Upscaling, then Performance,
   Rendering Fixes, Compatibility, Wine and Debugging under Advanced. A badge on each
