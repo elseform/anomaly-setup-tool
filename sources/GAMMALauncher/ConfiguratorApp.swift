@@ -26,7 +26,9 @@ struct ConfiguratorApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        Window(Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "GAMMA", id: "launcher") {
+        // The id names the saved window frame. "launcher" belonged to the
+        // single-column window, whose saved height fills the screen.
+        Window(Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String ?? "GAMMA", id: "settings") {
             ConfiguratorView(model: appDelegate.model, launcher: appDelegate.launcher)
                 .background(WindowCloseGuard(delegate: appDelegate))
         }
