@@ -39,6 +39,9 @@ final class AppModel {
     var wineEngineArchivePath = ""
     /// Optional directory of already-downloaded Microsoft installers; empty
     /// means the setup run uses its cache, then the network.
+    /// Whether setup looks for the Windows installers in
+    /// `redistInstallerDirectory` before downloading them.
+    var usesLocalInstallers = false
     var redistInstallerDirectory = ""
 
     init() {

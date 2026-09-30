@@ -63,6 +63,12 @@ struct SetupPage: View {
     // run stays offline.
     private var redistInstallerControls: some View {
         Section {
+            Picker("Installer source", selection: $model.usesLocalInstallers) {
+                Text("Download the installers automatically").tag(false)
+                Text("Provide installers locally").tag(true)
+            }
+            .pickerStyle(.radioGroup)
+            .labelsHidden()
             ForEach(redistInstallerStatuses, id: \.installer.filename) { status in
                 Label {
                     LabeledContent(status.installer.title) {
@@ -78,22 +84,25 @@ struct SetupPage: View {
                 }
                 .accessibilityElement(children: .combine)
             }
-            HStack(spacing: 8) {
-                TextField("Optional folder with downloaded installers",
-                          text: $model.redistInstallerDirectory)
-                    .accessibilityLabel("Downloaded installers folder")
-                Button("Choose…") {
-                    model.chooseRedistInstallerDirectory()
+            if model.usesLocalInstallers {
+                HStack(spacing: 8) {
+                    TextField("Downloaded installers folder",
+                              text: $model.redistInstallerDirectory,
+                              prompt: Text("Folder with downloaded installers"))
+                        .accessibilityLabel("Downloaded installers folder")
+                    Button("Choose…") {
+                        model.chooseRedistInstallerDirectory()
+                    }
+                    .accessibilityLabel("Choose downloaded installers folder")
                 }
-                .accessibilityLabel("Choose downloaded installers folder")
             }
             SectionNote("Setup verifies every file against the engine’s required checksum. Missing files are downloaded automatically.")
         } header: {
             Text("Dependencies")
         }
-        .task(id: model.redistInstallerDirectory) {
+        .task(id: model.usesLocalInstallers ? model.redistInstallerDirectory : "") {
             redistInstallerStatuses = RedistInstallers.statuses(
-                userDirectory: model.redistInstallerDirectory
+                userDirectory: model.usesLocalInstallers ? model.redistInstallerDirectory : ""
             )
         }
     }
@@ -102,14 +111,12 @@ struct SetupPage: View {
 
     private var advancedControls: some View {
         Section {
-            DisclosureGroup("Show advanced options", isExpanded: $advancedIsOpen) {
+            DisclosureGroup("Advanced options", isExpanded: $advancedIsOpen) {
                 DisclosureBody {
                     driveMappingControls
                     Toggle(SetupOptionCopy.saveDetailedLog, isOn: $model.saveVerboseLog)
                 }
             }
-        } header: {
-            Text("Advanced")
         }
     }
 
