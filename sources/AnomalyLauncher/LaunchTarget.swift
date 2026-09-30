@@ -4,9 +4,19 @@ struct LaunchTarget {
     let windowsPath: String
     let directory: URL
 
+    static func fileName(ofWindowsPath path: String) -> String {
+        path.replacingOccurrences(of: "\\", with: "/").split(separator: "/").last.map(String.init) ?? path
+    }
+
     static func isModOrganizer(_ path: String) -> Bool {
-        path.replacingOccurrences(of: "\\", with: "/")
-            .split(separator: "/").last?.lowercased() == "modorganizer.exe"
+        fileName(ofWindowsPath: path).lowercased() == "modorganizer.exe"
+    }
+
+    /// Where the executable lives on the Mac: its saved working directory, which
+    /// is the folder it was chosen from, plus its file name. Nil without a saved directory.
+    static func macPath(windowsPath: String, runDirectory: String) -> String? {
+        guard !windowsPath.isEmpty, !runDirectory.isEmpty else { return nil }
+        return URL(fileURLWithPath: runDirectory).appendingPathComponent(fileName(ofWindowsPath: windowsPath)).path
     }
 
     static func select(_ url: URL, prefix: URL) throws -> LaunchTarget {

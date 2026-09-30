@@ -82,13 +82,19 @@ struct CategoryDetail: View {
 
     private var modOrganizerRow: some View {
         let path = model.modOrganizerPath
-        return LabeledContent("ModOrganizer.exe") {
-            Text(path.isEmpty ? "Not set" : path)
-                .foregroundStyle(path.isEmpty ? .secondary : .primary)
-                .lineLimit(2).truncationMode(.middle).textSelection(.enabled)
+        return LabeledContent {
             Button("Choose…") { chooseExecutable(message: "Choose ModOrganizer.exe.", onSelect: model.selectModOrganizer) }
             if !path.isEmpty {
                 Button("Clear") { model.clearModOrganizer() }
+            }
+        } label: {
+            if path.isEmpty {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("ModOrganizer.exe")
+                    Text("Not set").font(.caption).foregroundStyle(.secondary)
+                }
+            } else {
+                PathLabel(macPath: model.modOrganizerMacPath, winePath: path, alignment: .leading)
             }
         }
     }
@@ -131,13 +137,7 @@ private struct CustomExecutableSection: View {
                     .buttonStyle(.borderless)
                 }
             } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Custom executable")
-                    Text(executable.path)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1).truncationMode(.middle).textSelection(.enabled)
-                }
+                PathLabel(macPath: executable.macPath, winePath: executable.path, alignment: .leading)
             }
             LabeledContent {
                 CommitTextField(
@@ -152,6 +152,26 @@ private struct CustomExecutableSection: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+            }
+        }
+    }
+}
+
+/// An executable's location on the Mac, with its Wine path under it.
+private struct PathLabel: View {
+    let macPath: String?
+    let winePath: String
+    let alignment: HorizontalAlignment
+
+    var body: some View {
+        VStack(alignment: alignment, spacing: 2) {
+            Text(macPath ?? winePath)
+                .lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+            if macPath != nil {
+                Text(winePath)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1).truncationMode(.middle).textSelection(.enabled)
             }
         }
     }
