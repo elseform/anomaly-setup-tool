@@ -9,6 +9,7 @@ swiftc -parse-as-library -target arm64-apple-macosx26.0 \
   "$ROOT_DIR/sources/AnomalyLauncher/EngineInfo.swift" \
   "$ROOT_DIR/sources/AnomalyLauncher/ConfiguratorModel.swift" \
   "$ROOT_DIR/sources/AnomalyLauncher/LaunchTarget.swift" \
+  "$ROOT_DIR/sources/AnomalyLauncher/CustomExecutable.swift" \
   "$ROOT_DIR/sources/AnomalyLauncher/LaunchEntry.swift" \
   "$ROOT_DIR/sources/AnomalyLauncher/LaunchController.swift" \
   "$ROOT_DIR/sources/AnomalyLauncher/LauncherError.swift" \

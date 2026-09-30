@@ -110,13 +110,17 @@ let dxmtConfigKeys: [DXMTConfigEntry] = [
 
 // Not rendered as GUI fields; carried through every regeneration as opaque
 // strings. EXE_PATH/EXE_RUN_DIR are what the launch helper runs, written by the
-// Configurator right before each launch. The ANOMALY_MO2_* and ANOMALY_CUSTOM_*
-// pairs are the two paths the user sets in Launch options.
+// Configurator right before each launch. The ANOMALY_MO2_* pair is the Mod
+// Organizer path the user sets in Launch options; the ANOMALY_CUSTOM_EXE_* lines
+// are the custom executable list (CustomExecutableStore).
 let passthroughKeys = [
     "EXE_PATH", "EXE_RUN_DIR",
     "ANOMALY_MO2_EXE_PATH", "ANOMALY_MO2_EXE_RUN_DIR",
-    "ANOMALY_CUSTOM_EXE_PATH", "ANOMALY_CUSTOM_EXE_RUN_DIR",
 ]
+
+func isPassthroughKey(_ key: String) -> Bool {
+    passthroughKeys.contains(key) || CustomExecutableStore.owns(key)
+}
 
 let pointerComment = "# Edit via the wrapper app — see it for descriptions and valid ranges."
 

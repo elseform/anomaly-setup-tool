@@ -16,9 +16,7 @@ mkdir -p "$OUTPUT_DIR"
 swiftc -parse-as-library -O -target arm64-apple-macosx26.0 \
   -framework SwiftUI -framework AppKit \
   "$ROOT_DIR"/sources/AnomalyLauncher/*.swift "$GENERATED_DIR/BuildInfo.swift" -o "$OUTPUT_DIR/AnomalyLauncher"
-# New wrappers use the setup tool's icon. The green Anomaly.icon stays in
-# sources/AnomalyLauncher/Resources/ unused; point actool at it and change
-# --app-icon (and the names checked in interactive_setup.py) to use it again.
+# New wrappers use the setup tool's icon.
 if ! xcrun actool "$ROOT_DIR/sources/AnomalySetupTool/SetupTool.icon" \
   --compile "$OUTPUT_DIR" --platform macosx --minimum-deployment-target 26.0 \
   --app-icon SetupTool --output-partial-info-plist "$OUTPUT_DIR/icon-info.plist" \
@@ -26,4 +24,18 @@ if ! xcrun actool "$ROOT_DIR/sources/AnomalySetupTool/SetupTool.icon" \
   echo 'Could not compile SetupTool.icon. Full Xcode with Icon Composer support is required.' >&2
   exit 1
 fi
+# The launch grid tiles: each Resources/<name>.icon becomes <name>.icns beside
+# the launcher; only that flat icon is kept, not a second Assets.car.
+for tile in mo2 anomalyexes custom; do
+  TILE_DIR="$GENERATED_DIR/$tile"
+  mkdir -p "$TILE_DIR"
+  if ! xcrun actool "$ROOT_DIR/sources/AnomalyLauncher/Resources/$tile.icon" \
+    --compile "$TILE_DIR" --platform macosx --minimum-deployment-target 26.0 \
+    --app-icon "$tile" --output-partial-info-plist "$TILE_DIR/info.plist" \
+    --output-format human-readable-text >/dev/null || [[ ! -s "$TILE_DIR/$tile.icns" ]]; then
+    echo "Could not compile $tile.icon. Full Xcode with Icon Composer support is required." >&2
+    exit 1
+  fi
+  cp "$TILE_DIR/$tile.icns" "$OUTPUT_DIR/$tile.icns"
+done
 codesign --force --sign - --timestamp=none "$OUTPUT_DIR/AnomalyLauncher"

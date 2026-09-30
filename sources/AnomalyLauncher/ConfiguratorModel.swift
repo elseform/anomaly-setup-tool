@@ -13,6 +13,8 @@ final class ConfiguratorModel {
     private(set) var revision = 0
     @ObservationIgnored let configFile: String
     @ObservationIgnored let loadError: String?
+    /// Executables that get their own tile, in the order the user added them.
+    private(set) var customExecutables: [CustomExecutable] = []
     @ObservationIgnored private var migratedSlots = false
 
     init(install: InstallLayout = .current()) {
@@ -22,7 +24,7 @@ final class ConfiguratorModel {
             configFile = paths.configFile
             loadError = nil
             state = loadState(configFile: paths.configFile, legacyStateFile: paths.stateFile)
-            migrateLaunchSlots()
+            loadExecutables()
         } else {
             prefixURL = nil
             configFile = ""
@@ -102,61 +104,115 @@ final class ConfiguratorModel {
         if save { persist() }
     }
 
-    /// Wrappers made before the two-path split hold only EXE_PATH, the target
-    /// picked at creation. It becomes the Mod Organizer path or the custom path
-    /// by its file name, so the choice made at creation is kept.
-    private func migrateLaunchSlots() {
-        let slotKeys = [LaunchSlot.modOrganizer, .custom].flatMap { [$0.pathKey, $0.runDirKey] }
-        guard !slotKeys.contains(where: { state.passthrough[$0] != nil }),
-              let path = state.passthrough["EXE_PATH"], !unquote(path).isEmpty else { return }
-        let slot: LaunchSlot = LaunchTarget.isModOrganizer(unquote(path)) ? .modOrganizer : .custom
-        state.passthrough[slot.pathKey] = path
-        state.passthrough[slot.runDirKey] = state.passthrough["EXE_RUN_DIR"]
+    private static let modOrganizerPathKey = "ANOMALY_MO2_EXE_PATH"
+    private static let modOrganizerRunDirKey = "ANOMALY_MO2_EXE_RUN_DIR"
+
+    /// Reads the custom executable list. Wrappers made before it existed hold
+    /// either one custom path in the old unnumbered keys or only EXE_PATH, the
+    /// target picked at creation; that becomes the Mod Organizer path or a
+    /// custom executable by its file name, so the choice made at creation is
+    /// kept. ANOMALY_CUSTOM_EXE_COUNT marks a file already in the current format.
+    private func loadExecutables() {
+        let passthrough = state.passthrough
+        customExecutables = CustomExecutableStore.load(from: passthrough)
+        let legacyKeys = [CustomExecutableStore.legacyPathKey, CustomExecutableStore.legacyRunDirKey]
+        let hasLegacyCustom = legacyKeys.contains { passthrough[$0] != nil }
+        if let path = passthrough[CustomExecutableStore.legacyPathKey].map(unquote), !path.isEmpty {
+            customExecutables.insert(CustomExecutable(path: path, runDirectory: unquote(passthrough[CustomExecutableStore.legacyRunDirKey] ?? "")), at: 0)
+        }
+        for key in legacyKeys { state.passthrough[key] = nil }
+        let isCurrent = passthrough[CustomExecutableStore.countKey] != nil
+            || hasLegacyCustom || passthrough[Self.modOrganizerPathKey] != nil
+        migratedSlots = hasLegacyCustom
+        guard !isCurrent, let path = passthrough["EXE_PATH"].map(unquote), !path.isEmpty else { return }
         migratedSlots = true
+        let runDirectory = passthrough["EXE_RUN_DIR"] ?? shellQuote("")
+        if LaunchTarget.isModOrganizer(path) {
+            state.passthrough[Self.modOrganizerPathKey] = passthrough["EXE_PATH"]
+            state.passthrough[Self.modOrganizerRunDirKey] = runDirectory
+        } else {
+            customExecutables.append(CustomExecutable(path: path, runDirectory: unquote(runDirectory)))
+        }
     }
 
-    func path(for slot: LaunchSlot) -> String { unquote(state.passthrough[slot.pathKey] ?? "") }
+    var modOrganizerPath: String { unquote(state.passthrough[Self.modOrganizerPathKey] ?? "") }
 
-    func runDirectory(for slot: LaunchSlot) -> String { unquote(state.passthrough[slot.runDirKey] ?? "") }
+    var modOrganizerRunDirectory: String { unquote(state.passthrough[Self.modOrganizerRunDirKey] ?? "") }
 
-    /// The launch grid: Mod Organizer and its Anomaly shortcuts while that path
-    /// is set, then the custom executable while that path is set.
-    var launchEntries: [LaunchEntry] {
-        var entries: [LaunchEntry] = []
-        if !path(for: .modOrganizer).isEmpty { entries += [.modOrganizer, .anomalyDX11, .anomalyDX11AVX] }
-        if !path(for: .custom).isEmpty { entries.append(.custom(path: path(for: .custom))) }
-        return entries
+    /// The saved path and working directory a tile starts.
+    func target(for source: LaunchSource) -> (path: String, runDirectory: String) {
+        switch source {
+        case .modOrganizer:
+            return (modOrganizerPath, modOrganizerRunDirectory)
+        case .custom(let id):
+            let executable = customExecutables.first { $0.id == id }
+            return (executable?.path ?? "", executable?.runDirectory ?? "")
+        }
     }
 
-    func selectTarget(_ url: URL, slot: LaunchSlot) {
+    /// Mod Organizer and its Anomaly shortcuts, while that path is set.
+    var modOrganizerEntries: [LaunchEntry] {
+        modOrganizerPath.isEmpty ? [] : [.modOrganizer, .anomalyDX11, .anomalyDX11AVX]
+    }
+
+    var customEntries: [LaunchEntry] { customExecutables.map(LaunchEntry.custom) }
+
+    /// The launch grid: the Mod Organizer tiles, then one tile per custom executable.
+    var launchEntries: [LaunchEntry] { modOrganizerEntries + customEntries }
+
+    func selectModOrganizer(_ url: URL) {
         do {
-            guard let prefixURL else { throw LauncherError.message("Wine prefix location is missing.") }
-            let target = try LaunchTarget.select(url, prefix: prefixURL)
-            if slot == .modOrganizer, !LaunchTarget.isModOrganizer(target.windowsPath) {
-                throw LauncherError.message("Choose ModOrganizer.exe.")
-            }
-            state.passthrough[slot.pathKey] = shellQuote(target.windowsPath)
-            state.passthrough[slot.runDirKey] = shellQuote(target.directory.path)
+            let target = try resolveTarget(url)
+            guard LaunchTarget.isModOrganizer(target.windowsPath) else { throw LauncherError.message("Choose ModOrganizer.exe.") }
+            state.passthrough[Self.modOrganizerPathKey] = shellQuote(target.windowsPath)
+            state.passthrough[Self.modOrganizerRunDirKey] = shellQuote(target.directory.path)
             persist()
         } catch { saveError = error.localizedDescription }
     }
 
-    func clearTarget(_ slot: LaunchSlot) {
-        state.passthrough[slot.pathKey] = shellQuote("")
-        state.passthrough[slot.runDirKey] = shellQuote("")
+    func clearModOrganizer() {
+        state.passthrough[Self.modOrganizerPathKey] = shellQuote("")
+        state.passthrough[Self.modOrganizerRunDirKey] = shellQuote("")
         persist()
     }
 
-    /// Makes the slot's executable the one the launch helper runs.
-    func activate(_ slot: LaunchSlot) {
-        state.passthrough["EXE_PATH"] = state.passthrough[slot.pathKey]
-        state.passthrough["EXE_RUN_DIR"] = state.passthrough[slot.runDirKey]
+    func addCustomExecutable(_ url: URL) {
+        do {
+            let target = try resolveTarget(url)
+            customExecutables.append(CustomExecutable(path: target.windowsPath, runDirectory: target.directory.path))
+            persist()
+        } catch { saveError = error.localizedDescription }
+    }
+
+    func removeCustomExecutable(_ id: UUID) {
+        customExecutables.removeAll { $0.id == id }
+        persist()
+    }
+
+    /// An empty name goes back to the executable's file name.
+    func setCustomName(_ id: UUID, _ name: String, save: Bool = true) {
+        guard let index = customExecutables.firstIndex(where: { $0.id == id }) else { return }
+        customExecutables[index].name = name
+        if save { persist() }
+    }
+
+    private func resolveTarget(_ url: URL) throws -> LaunchTarget {
+        guard let prefixURL else { throw LauncherError.message("Wine prefix location is missing.") }
+        return try LaunchTarget.select(url, prefix: prefixURL)
+    }
+
+    /// Makes the tile's executable the one the launch helper runs.
+    func activate(_ source: LaunchSource) {
+        let target = target(for: source)
+        state.passthrough["EXE_PATH"] = shellQuote(target.path)
+        state.passthrough["EXE_RUN_DIR"] = shellQuote(target.runDirectory)
     }
 
     @discardableResult
     func persist() -> Bool {
         do {
             guard canEdit else { throw LauncherError.message(loadError ?? "Settings location is missing.") }
+            CustomExecutableStore.store(customExecutables, into: &state.passthrough)
             try saveEnv(&state, configFile: configFile)
             saveError = nil
             return true

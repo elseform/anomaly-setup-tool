@@ -587,8 +587,12 @@ def symlink_force(link: Path, target) -> None:
     link.symlink_to(target)
 
 
+# Launch grid tile icons, loaded by the launcher from Contents/Resources.
+LAUNCHER_TILE_ICONS = ("mo2.icns", "anomalyexes.icns", "custom.icns")
+
+
 def validate_launcher_resources(directory: Path) -> dict:
-    for name in ("AnomalyLauncher", "SetupTool.icns", "Assets.car", "icon-info.plist"):
+    for name in ("AnomalyLauncher", "SetupTool.icns", "Assets.car", "icon-info.plist", *LAUNCHER_TILE_ICONS):
         file = directory / name
         if not file.is_file() or file.stat().st_size == 0:
             raise SetupError(f"Launcher resource missing or empty: {file}. Rebuild anomaly-setup-tool.")
@@ -607,7 +611,7 @@ def validate_launcher_resources(directory: Path) -> dict:
 def install_launcher_resources(directory: Path, app_path: Path) -> dict:
     metadata = validate_launcher_resources(directory)
     shutil.copy2(directory / "AnomalyLauncher", app_path / "Contents/MacOS/AnomalyLauncher")
-    for name in ("SetupTool.icns", "Assets.car"):
+    for name in ("SetupTool.icns", "Assets.car", *LAUNCHER_TILE_ICONS):
         shutil.copy2(directory / name, app_path / "Contents/Resources" / name)
     return metadata
 

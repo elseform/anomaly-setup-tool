@@ -96,7 +96,7 @@ struct SettingRow: View {
             case .env(let key):
                 if let entry = schemaByKey[key] {
                     SchemaRow(model: model, entry: entry)
-                        .disabled(key == "DEFAULT_GAME_ARGS" && model.path(for: .custom).isEmpty)
+                        .disabled(key == "DEFAULT_GAME_ARGS" && model.customExecutables.isEmpty)
                 }
             case .dxmt(let key):
                 if let entry = dxmtConfigByKey[key] {

@@ -25,8 +25,9 @@ final class LaunchController {
             guard let wrapper = model.install.wrapperURL, let prefix = model.prefixURL else {
                 throw LauncherError.message("Open this from an installed wrapper.")
             }
-            _ = try LaunchTarget.resolve(model.path(for: entry.slot), prefix: prefix)
-            let directory = model.runDirectory(for: entry.slot)
+            let target = model.target(for: entry.source)
+            _ = try LaunchTarget.resolve(target.path, prefix: prefix)
+            let directory = target.runDirectory
             var isDirectory: ObjCBool = false
             guard !directory.isEmpty, FileManager.default.fileExists(atPath: directory, isDirectory: &isDirectory), isDirectory.boolValue else {
                 throw LauncherError.message("The executable’s working directory is missing. Choose the executable again.")
@@ -39,8 +40,8 @@ final class LaunchController {
             let logs = FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent("Library/Logs")
                 .appendingPathComponent(wrapper.deletingPathExtension().lastPathComponent)
-            // The helper runs EXE_PATH from app.env, so save the chosen slot there.
-            model.activate(entry.slot)
+            // The helper runs EXE_PATH from app.env, so save the chosen target there.
+            model.activate(entry.source)
             guard model.persist() else { throw LauncherError.message(model.saveError ?? "Could not save settings.") }
             running = entry
             do {

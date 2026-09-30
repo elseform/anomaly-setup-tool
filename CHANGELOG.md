@@ -19,12 +19,13 @@
   name is assumed for either. The interactive wizard's default executable path is `bin/AnomalyDX11.exe`.
 - The wrapper window opens on a grid of launch tiles instead of a single Launch button: ModOrganizer and two
   Mod Organizer shortcuts (Anomaly - DX11, Anomaly - DX11 (AVX)) while a ModOrganizer.exe path is set, and
-  the custom executable while that path is set. **Launch options** now holds both paths; setup fills in the
-  one chosen at creation and existing wrappers keep their target. Launch arguments apply to the custom
-  executable only. The window title no longer shows the wrapper's name, and the bottom-bar Launch button is gone.
+  a second row with one tile per custom executable. **Launch options** holds the ModOrganizer.exe path and
+  any number of custom executables, each with a renamable tile and a − button to remove it; setup fills in
+  the one chosen at creation and existing wrappers keep their target. Launch arguments apply to custom
+  executables only. The tiles use the Icon Composer artwork in `sources/AnomalyLauncher/Resources/`. The window title no longer shows the wrapper's name, and the bottom-bar Launch button is gone.
 - The wrapper window stays open after a launch instead of closing. While the launched program runs, the whole
   window is greyed out under a "Wrapper is running" message, and it unlocks by itself when that program exits.
-- New wrappers use the setup tool's icon. The green Anomaly icon artwork stays in the repository, unused.
+- New wrappers use the setup tool's icon.
 - Replaced the Sikarugir wrapper pipeline with the `anomaly-wine-engine` engine archive
   (CrossOver 26.3 / Wine 11 with DXMT), driven by this tool's own
   `interactive_setup.py`. The wizard no longer installs Homebrew casks or resolves
