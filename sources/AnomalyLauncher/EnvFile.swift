@@ -154,7 +154,13 @@ func parseEnvLines(path: String) -> ParsedEnv {
         if retiredKeyPrefixes.contains(where: parsed.key.hasPrefix) {
             continue
         } else if isPassthroughKey(parsed.key) {
-            result.passthrough[parsed.key] = parsed.value
+            // A commented-out path or executable line stays a comment; only
+            // active lines take effect.
+            if parsed.enabled {
+                result.passthrough[parsed.key] = parsed.value
+            } else {
+                result.foreign.append(stripped)
+            }
         } else if schemaByKey[parsed.key] != nil || parsed.key == "DXMT_CONFIG" {
             result.vars[parsed.key] = (parsed.enabled, parsed.value)
         } else {
