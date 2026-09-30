@@ -7,7 +7,7 @@ import Foundation
 final class RedistInstallerTests {
     private func makeTempDirectory() throws -> URL {
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("gamma-redist-tests-\(UUID().uuidString)")
+            .appendingPathComponent("anomaly-redist-tests-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         return url
     }
@@ -17,7 +17,7 @@ final class RedistInstallerTests {
         let json = """
         {
           "archivePath" : "/tmp/engine.tar.xz",
-          "appName" : "stalker-gamma",
+          "appName" : "stalker-anomaly",
           "appParent" : "/tmp/apps",
           "gammaRoot" : "/tmp/GAMMA",
           "mo2Path" : "",
@@ -36,7 +36,7 @@ final class RedistInstallerTests {
         )
 
         XCTAssertNil(request.redistInstallerDirectory)
-        XCTAssertEqual(request.appName, "stalker-gamma")
+        XCTAssertEqual(request.appName, "stalker-anomaly")
     }
 
     func testRequestRoundTripsASuppliedRedistDirectory() throws {

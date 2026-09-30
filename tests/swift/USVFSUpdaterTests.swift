@@ -9,7 +9,7 @@ final class USVFSUpdaterTests {
 
     private func makeTempDirectory() throws -> URL {
         let url = fileManager.temporaryDirectory
-            .appendingPathComponent("gamma-usvfs-tests-\(UUID().uuidString)")
+            .appendingPathComponent("anomaly-usvfs-tests-\(UUID().uuidString)")
         try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
         return url
     }
@@ -97,7 +97,7 @@ final class USVFSUpdaterTests {
         for name in USVFSUpdater.binaryNames {
             XCTAssertEqual(read(mo2.appendingPathComponent(name)), "new-\(name)")
         }
-        let leftovers = try fileManager.contentsOfDirectory(atPath: mo2.path).filter { $0.hasSuffix(".gamma-setup-tool-new") }
+        let leftovers = try fileManager.contentsOfDirectory(atPath: mo2.path).filter { $0.hasSuffix(".anomaly-setup-tool-new") }
         XCTAssertTrue(leftovers.isEmpty)
     }
 
