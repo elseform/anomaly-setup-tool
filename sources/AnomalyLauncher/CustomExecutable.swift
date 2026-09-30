@@ -41,6 +41,10 @@ enum CustomExecutableStore {
     static let legacyPathKey = "ANOMALY_CUSTOM_EXE_PATH"
     static let legacyRunDirKey = "ANOMALY_CUSTOM_EXE_RUN_DIR"
 
+    /// Upper bound on the saved count, so a mistyped app.env value cannot
+    /// make the launcher loop over billions of missing entries.
+    static let maxCount = 256
+
     private static let prefix = "ANOMALY_CUSTOM_EXE_"
 
     /// Whether app.env keeps this key as an opaque line of the custom executable list.
@@ -51,7 +55,7 @@ enum CustomExecutableStore {
     /// The numbered entries, in order. Entries without a path are dropped. An
     /// entry saved before each had its own arguments takes `defaultArguments`.
     static func load(from passthrough: [String: String], defaultArguments: String = "") -> [CustomExecutable] {
-        let count = Int(unquote(passthrough[countKey] ?? "")) ?? 0
+        let count = min(Int(unquote(passthrough[countKey] ?? "")) ?? 0, maxCount)
         guard count > 0 else { return [] }
         return (1...count).compactMap { index in
             let path = unquote(passthrough[key(index, "PATH")] ?? "")
