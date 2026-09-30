@@ -22,14 +22,28 @@ public enum WineEngineSetupError: Error, CustomStringConvertible, LocalizedError
 /// as a subprocess and forwards its own `--json` event stream through
 /// `reporter` verbatim — no text-banner-parsing translation layer needed,
 /// since the script speaks this schema natively.
-public final class WineEngineSetup {
+public final class WineEngineSetup: @unchecked Sendable {
     private let fileManager = FileManager.default
+    private let childLock = NSLock()
+    /// interactive_setup.py while it runs; guarded by `childLock`.
+    private var child: Process?
     private let executablePath: String
     private let reporter: JSONEventReporter
 
     public init(executablePath: String, reporter: JSONEventReporter) {
         self.executablePath = executablePath
         self.reporter = reporter
+    }
+
+    /// Sends SIGINT to interactive_setup.py, which removes its partial wrapper
+    /// and exits. Returns false when the script is not running, so the caller
+    /// knows there is nothing to wait for. Safe to call from any thread.
+    public func interruptSetupScript() -> Bool {
+        childLock.lock()
+        defer { childLock.unlock() }
+        guard let child, child.isRunning else { return false }
+        child.interrupt()
+        return true
     }
 
     private var scriptRoot: URL {
@@ -296,7 +310,22 @@ public final class WineEngineSetup {
         process.standardError = pipe
 
         let relay = ScriptOutputRelay(reporter: reporter)
-        try process.run()
+        // Registered under the lock so an interrupt cannot land between the
+        // launch and the registration and leave the script running unnoticed.
+        childLock.lock()
+        do {
+            try process.run()
+        } catch {
+            childLock.unlock()
+            throw error
+        }
+        child = process
+        childLock.unlock()
+        defer {
+            childLock.lock()
+            child = nil
+            childLock.unlock()
+        }
         let reader = pipe.fileHandleForReading
         let drained = DispatchSemaphore(value: 0)
         DispatchQueue.global(qos: .userInitiated).async {

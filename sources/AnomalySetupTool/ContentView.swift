@@ -6,7 +6,7 @@ import AnomalySetupCore
 
 struct ContentView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var model = AppModel()
+    let model: AppModel
     @State private var step: WizardStep = .welcome
     @State private var createButtonSubmitted = false
 
@@ -240,6 +240,6 @@ extension ContentView {
 
 #if DEBUG
 #Preview("Anomaly Setup Tool") {
-    ContentView()
+    ContentView(model: AppModel())
 }
 #endif
