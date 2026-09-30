@@ -44,7 +44,7 @@ struct WelcomePage: View {
                 .buttonStyle(.borderedProminent)
                 .help("Pick ModOrganizer.exe, or another Windows program to launch instead")
         } label: {
-            RowLabel(title: "Select ModOrganizer location", detail: "Choose ModOrganizer.exe in your GAMMA folder.")
+            RowLabel(title: "Select ModOrganizer location", detail: "Choose ModOrganizer.exe in your Anomaly folder.")
         }
     }
 

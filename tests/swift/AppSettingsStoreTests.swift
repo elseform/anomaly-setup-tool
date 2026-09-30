@@ -25,7 +25,7 @@ final class AppSettingsStoreTests {
         let temp = try makeTempDir("anomaly-settings-save")
         defer { try? FileManager.default.removeItem(at: temp) }
         let settingsURL = temp.appendingPathComponent("settings/settings.json")
-        let mo2 = temp.appendingPathComponent("GAMMA/ModOrganizer.exe")
+        let mo2 = temp.appendingPathComponent("Anomaly/ModOrganizer.exe")
 
         try AppSettingsStore.save(settings: AppSettings(gammaPath: mo2.path), to: settingsURL)
 
@@ -61,13 +61,13 @@ final class AppSettingsStoreTests {
         let temp = try makeTempDir("anomaly-settings-preserve")
         defer { try? FileManager.default.removeItem(at: temp) }
         let settingsURL = temp.appendingPathComponent("settings.json")
-        try AppSettingsStore.save(settings: AppSettings(gammaPath: "/Games/GAMMA/ModOrganizer.exe"), to: settingsURL)
+        try AppSettingsStore.save(settings: AppSettings(gammaPath: "/Games/Anomaly/ModOrganizer.exe"), to: settingsURL)
 
         AppSettingsStore.ensureSettingsFileExists(at: settingsURL)
 
         XCTAssertEqual(
             AppSettingsStore.loadSettings(from: settingsURL).gammaPath,
-            "/Games/GAMMA/ModOrganizer.exe"
+            "/Games/Anomaly/ModOrganizer.exe"
         )
     }
 

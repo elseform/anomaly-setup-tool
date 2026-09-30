@@ -11,7 +11,7 @@ enum SetupOptionCopy {
 
 enum SupportCopy {
     static let githubTitle = "GitHub - elseform"
-    static let githubHelp = "Open the Anomaly Setup Tool repository by elseform"
+    static let githubHelp = "Visit github repository"
     static let githubURL = URL(string: "https://github.com/elseform/anomaly-setup-tool")!
     static let discordTitle = "GAMMA Discord"
     static let discordHelp = "Open the GAMMA Discord"

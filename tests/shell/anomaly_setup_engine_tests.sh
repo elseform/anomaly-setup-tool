@@ -65,7 +65,7 @@ write_request() {
   "archivePath" : "$archive_path",
   "appName" : "anomaly-cli-${TMP_ROOT##*/}",
   "appParent" : "$TMP_ROOT/apps",
-  "gammaRoot" : "$TMP_ROOT/stage/GAMMA",
+  "gammaRoot" : "$TMP_ROOT/stage/Anomaly",
   "mo2Path" : "$mo2_path",
   "yes" : true,
   "skipFinderAlias" : true,
@@ -151,10 +151,10 @@ expect_failure "mo2 outside gammaRoot" "$TMP_ROOT/outside.out" "$TMP_ROOT/outsid
 assert_contains "$TMP_ROOT/outside.err" "is not inside gammaRoot"
 
 printf '==> CLI forwards packaged launcher resources to the wrapper script\n'
-mkdir -p "$TMP_ROOT/stage/GAMMA"
-touch "$TMP_ROOT/stage/GAMMA/ModOrganizer.exe"
+mkdir -p "$TMP_ROOT/stage/Anomaly"
+touch "$TMP_ROOT/stage/Anomaly/ModOrganizer.exe"
 write_request "$TMP_ROOT/reached-script.json" "$TMP_ROOT/present.tar.xz" \
-  "$TMP_ROOT/stage/GAMMA/ModOrganizer.exe"
+  "$TMP_ROOT/stage/Anomaly/ModOrganizer.exe"
 expect_failure "empty engine content" "$TMP_ROOT/reached-script.out" "$TMP_ROOT/reached-script.err" \
   -- create-wine-engine --request-file "$TMP_ROOT/reached-script.json"
 assert_contains "$TMP_ROOT/reached-script.err" "wine binary missing after extraction"

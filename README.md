@@ -2,14 +2,14 @@
 
 Status: current development version, 0.96 (`dev` branch).
 
-Native macOS tool for creating a Wine `.app` wrapper around an existing S.T.A.L.K.E.R. G.A.M.M.A. installation, using [anomaly-wine-engine](https://github.com/elseform/anomaly-wine-engine) and DXMT. It does not install G.A.M.M.A.
+Native macOS tool for creating a Wine `.app` wrapper around an existing S.T.A.L.K.E.R. Anomaly installation, using [anomaly-wine-engine](https://github.com/elseform/anomaly-wine-engine) and DXMT. It does not install Anomaly.
 
 This README describes the current source. Published builds are available on the [Releases page](https://github.com/elseform/anomaly-setup-tool/releases); check the version and release notes before following these instructions with an older build.
 
 ## Requirements
 
 - An Apple Silicon Mac running macOS 26 or newer, with Rosetta 2 for the Wine engine.
-- An existing G.A.M.M.A. installation and its `ModOrganizer.exe`, or another Windows executable to launch.
+- An existing Anomaly installation and its `ModOrganizer.exe`, or another Windows executable to launch.
 - Python 3 available to setup. The backend checks `/usr/bin/python3`, `/opt/homebrew/bin/python3`, then `/usr/local/bin/python3`.
 - Internet access for automatic engine resolution and missing runtime downloads. For offline setup, select a local engine archive and provide or cache the runtime files described below.
 
@@ -23,7 +23,7 @@ Extract the downloaded setup-tool archive and open `Anomaly Setup Tool.app`, or 
 4. Click **Create wrapper**.
 5. Open the created app from Finder. It opens on a grid of launch tiles: **ModOrganizer**, **Anomaly - DX11** and **Anomaly - DX11 (AVX)** (Mod Organizer shortcuts) while a ModOrganizer.exe path is set, and a tile for the custom executable while that path is set. Click a tile to launch it; the window quits after handing off to the launch process. Adjust settings, or set either path, from the sidebar first.
 
-Setup checks the selected executable exists; it does not validate the contents or health of the G.A.M.M.A. installation.
+Setup checks the selected executable exists; it does not validate the contents or health of the Anomaly installation.
 
 ## Engine Selection and Downloads
 

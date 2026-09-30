@@ -103,7 +103,7 @@ struct CreatePage: View {
             (0, "Preparing", "Finding the game engine"),
             (1, "Engine", "Unpacking the game engine"),
             (2, "Windows environment", "Preparing the Windows environment"),
-            (3, "Drives", "Connecting your GAMMA folder"),
+            (3, "Drives", "Connecting your Anomaly folder"),
             (4, "Windows components", "Installing Windows components"),
             (5, "Wrapper", "Building the wrapper and its launcher"),
             (6, "Finishing", "Finishing up")
