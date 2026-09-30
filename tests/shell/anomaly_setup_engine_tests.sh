@@ -159,6 +159,39 @@ expect_failure "empty engine content" "$TMP_ROOT/reached-script.out" "$TMP_ROOT/
   -- create-wine-engine --request-file "$TMP_ROOT/reached-script.json"
 assert_contains "$TMP_ROOT/reached-script.err" "wine binary missing after extraction"
 
+printf '==> An interrupt is forwarded to the setup script, which then exits\n'
+BUNDLE="$TMP_ROOT/interrupt-bundle"
+mkdir -p "$BUNDLE/wine-engine" "$BUNDLE/launcher"
+cp "$ENGINE" "$BUNDLE/anomaly-setup-engine"
+printf '#!/bin/sh\n' > "$BUNDLE/launcher/AnomalyLauncher"
+chmod +x "$BUNDLE/launcher/AnomalyLauncher"
+cat > "$BUNDLE/wine-engine/interactive_setup.py" <<'PY'
+import pathlib, sys, time
+here = pathlib.Path(sys.argv[0]).parent
+(here / "started").write_text("x")
+try:
+    time.sleep(30)
+except KeyboardInterrupt:
+    (here / "interrupted").write_text("x")
+    sys.exit(130)
+PY
+write_request "$TMP_ROOT/interrupt.json" "$TMP_ROOT/present.tar.xz" \
+  "$TMP_ROOT/stage/Anomaly/ModOrganizer.exe"
+"$BUNDLE/anomaly-setup-engine" create-wine-engine --request-file "$TMP_ROOT/interrupt.json" \
+  >"$TMP_ROOT/interrupt.out" 2>"$TMP_ROOT/interrupt.err" &
+ENGINE_PID=$!
+for _ in $(seq 1 100); do
+  [ -e "$BUNDLE/wine-engine/started" ] && break
+  sleep 0.1
+done
+[ -e "$BUNDLE/wine-engine/started" ] || { kill "$ENGINE_PID" 2>/dev/null || true; fail "setup script never started"; }
+kill -INT "$ENGINE_PID"
+ENGINE_STATUS=0
+wait "$ENGINE_PID" || ENGINE_STATUS=$?
+[ "$ENGINE_STATUS" -ne 0 ] || fail "interrupted engine exited successfully"
+[ -e "$BUNDLE/wine-engine/interrupted" ] || fail "setup script did not receive the interrupt"
+assert_contains "$TMP_ROOT/interrupt.out" '"success":false'
+
 printf '==> No wrapper was created on any failure path\n'
 if [ -d "$TMP_ROOT/apps" ] && [ -n "$(find "$TMP_ROOT/apps" -mindepth 1 -print -quit)" ]; then
   fail "partial wrapper remains after failure"
