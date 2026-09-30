@@ -7,7 +7,6 @@ import AnomalySetupCore
 struct SetupPage: View {
     @Bindable var model: AppModel
 
-    @State private var advancedIsOpen = false
     @State private var redistInstallerStatuses: [RedistInstallers.Status] = []
 
     // MARK: - Body
@@ -18,7 +17,7 @@ struct SetupPage: View {
             Group {
                 engineArchiveControls
                 redistInstallerControls
-                advancedControls
+                setupLogControls
             }
             .disabled(!ready)
             .opacity(ready ? 1 : 0.45)
@@ -106,31 +105,11 @@ struct SetupPage: View {
         }
     }
 
-    // MARK: - Advanced
+    // MARK: - Setup Log
 
-    private var advancedControls: some View {
+    private var setupLogControls: some View {
         Section {
-            DisclosureGroup("Advanced options", isExpanded: $advancedIsOpen) {
-                DisclosureBody {
-                    driveMappingControls
-                    Toggle(SetupOptionCopy.saveDetailedLog, isOn: $model.saveVerboseLog)
-                }
-            }
+            Toggle(SetupOptionCopy.saveDetailedLog, isOn: $model.saveVerboseLog)
         }
-    }
-
-    // MARK: - Drive Mapping
-
-    @ViewBuilder
-    private var driveMappingControls: some View {
-        LabeledContent("Drive root (G:)") {
-            Text(model.configuration.optionalGDriveRoot)
-                .textSelection(.enabled)
-        }
-        LabeledContent("Mac root (Z:)") {
-            Text("/")
-                .textSelection(.enabled)
-        }
-        SectionNote("G: uses the parent of the selected executable’s folder. Z: provides access to your Mac’s filesystem. Existing ModOrganizer paths must still point to the correct folders.")
     }
 }
