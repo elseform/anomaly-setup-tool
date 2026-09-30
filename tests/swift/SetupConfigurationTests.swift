@@ -2,20 +2,20 @@ import Foundation
 
 final class SetupConfigurationTests {
     func testOutputAppPathAddsAppSuffix() {
-        let config = SetupConfiguration(appName: "stalker-gamma", installDirectory: "/tmp/GAMMA")
+        let config = SetupConfiguration(appName: "stalker-anomaly", installDirectory: "/tmp/GAMMA")
 
-        XCTAssertEqual(config.outputAppPath, "/tmp/GAMMA/stalker-gamma.app")
+        XCTAssertEqual(config.outputAppPath, "/tmp/GAMMA/stalker-anomaly.app")
     }
 
     func testOutputAppPathDoesNotDuplicateAppSuffix() {
-        let config = SetupConfiguration(appName: "  stalker-gamma.app  ", installDirectory: "/tmp/GAMMA")
+        let config = SetupConfiguration(appName: "  stalker-anomaly.app  ", installDirectory: "/tmp/GAMMA")
 
-        XCTAssertEqual(config.outputAppPath, "/tmp/GAMMA/stalker-gamma.app")
+        XCTAssertEqual(config.outputAppPath, "/tmp/GAMMA/stalker-anomaly.app")
     }
 
     func testDefaultOutputAppPathUsesApplicationsFolder() {
         let expected = URL(fileURLWithPath: SetupConfiguration.defaultInstallDirectory)
-            .appendingPathComponent("stalker-gamma.app")
+            .appendingPathComponent("stalker-anomaly.app")
             .path
 
         XCTAssertEqual(SetupConfiguration().outputAppPath, expected)
@@ -32,7 +32,7 @@ final class SetupConfigurationTests {
     /// `manualModOrganizerPath` is the only MO2 source, and the file has to
     /// actually be there.
     func testModOrganizerTargetRequiresAnExistingExecutable() throws {
-        let temp = try makeTempDir("gamma-environment")
+        let temp = try makeTempDir("anomaly-environment")
         defer { try? FileManager.default.removeItem(at: temp) }
         let mo2 = temp.appendingPathComponent("ModOrganizer.exe")
         FileManager.default.createFile(atPath: mo2.path, contents: Data())
@@ -52,7 +52,7 @@ final class SetupConfigurationTests {
     }
 
     func testCustomLaunchExecutableReplacesModOrganizer() throws {
-        let temp = try makeTempDir("gamma-custom-launch")
+        let temp = try makeTempDir("anomaly-custom-launch")
         defer { try? FileManager.default.removeItem(at: temp) }
         let executable = temp.appendingPathComponent("AnomalyDX11AVX.exe")
         FileManager.default.createFile(atPath: executable.path, contents: Data())
@@ -64,7 +64,7 @@ final class SetupConfigurationTests {
     }
 
     func testCustomLaunchExecutableMustStillExist() throws {
-        let temp = try makeTempDir("gamma-custom-launch-missing")
+        let temp = try makeTempDir("anomaly-custom-launch-missing")
         defer { try? FileManager.default.removeItem(at: temp) }
         let executable = temp.appendingPathComponent("AnomalyDX11AVX.exe")
         FileManager.default.createFile(atPath: executable.path, contents: Data())
@@ -79,7 +79,7 @@ final class SetupConfigurationTests {
     /// no drive-mapping mode any more — G: is simply derived from the resolved
     /// launch target, two components up.
     func testDriveMappingIsDerivedFromTheResolvedLaunchTarget() throws {
-        let temp = try makeTempDir("gamma-drive-mapping")
+        let temp = try makeTempDir("anomaly-drive-mapping")
         defer { try? FileManager.default.removeItem(at: temp) }
         let gamesRoot = temp.appendingPathComponent("Games", isDirectory: true)
         let gammaRoot = gamesRoot.appendingPathComponent("GAMMA", isDirectory: true)

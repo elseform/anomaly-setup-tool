@@ -4,6 +4,15 @@
 
 ### Main improvements
 
+- Renamed from GAMMA Setup Tool to Anomaly Setup Tool. The app is `Anomaly Setup Tool.app`, the backend
+  is `anomaly-setup-engine`, and the wrapper launcher is `AnomalyLauncher`. Engines now come from
+  `elseform/anomaly-wine-engine` (`engine-cx26-w11-anomaly-<N>` releases, archives named
+  `CX26-W11-ANOMALY-<N>.tar.xz`); engines published under the GAMMA name are no longer recognized. Wrapper
+  settings use `ANOMALY_*` names in `app.env` (for example `ANOMALY_GRAPHICS_BACKEND`), new wrappers get the
+  bundle identifier `com.elseform.anomaly.wine-engine.<name>`, and the default wrapper name is `Anomaly`
+  (`stalker-anomaly` in the wizard). Logs, caches and MO2 backups moved to `anomaly-setup-tool` folders.
+  Wrappers created by earlier versions keep running with their own launcher and engine copy; create new
+  ones with this version.
 - The wrapper window opens on a grid of launch tiles instead of a single Launch button: ModOrganizer and two
   Mod Organizer shortcuts (Anomaly - DX11, Anomaly - DX11 (AVX)) while a ModOrganizer.exe path is set, and
   the custom executable while that path is set. **Launch options** now holds both paths; setup fills in the
@@ -11,15 +20,15 @@
   executable only. The window title no longer shows the wrapper's name, and the bottom-bar Launch button is gone.
 - The wrapper window stays open after a launch instead of closing. While the launched program runs, the whole
   window is greyed out under a "Wrapper is running" message, and it unlocks by itself when that program exits.
-- New wrappers use the setup tool's icon. The green Gamma icon artwork stays in the repository, unused.
-- Replaced the Sikarugir wrapper pipeline with the `gamma-wine-engine` engine archive
+- New wrappers use the setup tool's icon. The green Anomaly icon artwork stays in the repository, unused.
+- Replaced the Sikarugir wrapper pipeline with the `anomaly-wine-engine` engine archive
   (CrossOver 26.3 / Wine 11 with DXMT), driven by this tool's own
   `interactive_setup.py`. The wizard no longer installs Homebrew casks or resolves
   Winetricks itself; the engine archive carries the graphics backend and a pinned list of
   the Visual C++ and DirectX files it needs, which are downloaded from Microsoft's own
   installers during setup and cached.
 - Requires an Apple Silicon Mac running macOS 26 or newer, as do the wrappers it creates.
-- `Save setup log` now writes a log to `~/Library/Logs/gamma-setup-tool/`.
+- `Save setup log` now writes a log to `~/Library/Logs/anomaly-setup-tool/`.
 - The graphics backend is DXMT. D3DMetal is no longer bundled, and the renderer,
   display-resolution, and drive-mapping options are gone with the pipeline that used
   them — the engine mounts both `Z:` and `G:` on its own.
@@ -27,10 +36,10 @@
   of its console output.
 - The bundled ModOrganizer `usvfs` files are only written into a folder that contains
   `ModOrganizer.exe`; a custom launch executable elsewhere no longer receives them. MO2's
-  own copies that differ are backed up to `gamma-setup-tool-backups/usvfs-<timestamp>/`
+  own copies that differ are backed up to `anomaly-setup-tool-backups/usvfs-<timestamp>/`
   in the MO2 folder before being replaced.
 - With no local archive selected, setup always downloads the newest published
-  `gamma-wine-engine` release, verifies its checksum, and caches it. A local
+  `anomaly-wine-engine` release, verifies its checksum, and caches it. A local
   `.tar.xz` archive can be selected instead and is used as is.
 - Engine archives are `.tar.xz`, which macOS unpacks without extra tools. `.tar.zst`
   archives and the `zstd` requirement are gone; releases published only as `.tar.zst`
@@ -64,7 +73,7 @@
 - The setup tool's pages now use the same grouped forms, bottom bar and buttons as the app's
   settings window.
 - The settings window has an About page with the launcher version, which always matches the
-  GAMMA Setup Tool that built the app, and the engine and DXMT versions bundled in it. The
+  Anomaly Setup Tool that built the app, and the engine and DXMT versions bundled in it. The
   footer links to the GitHub repository and the GAMMA Discord.
 
 - The wizard opens on a welcome page where you select `ModOrganizer.exe` (or another

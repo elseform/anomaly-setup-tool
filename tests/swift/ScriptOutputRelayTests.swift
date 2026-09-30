@@ -5,7 +5,7 @@ import Foundation
 final class ScriptOutputRelayTests {
     private func makeRelay() throws -> (ScriptOutputRelay, URL) {
         let log = FileManager.default.temporaryDirectory
-            .appendingPathComponent("gamma-relay-tests-\(UUID().uuidString).log")
+            .appendingPathComponent("anomaly-relay-tests-\(UUID().uuidString).log")
         let reporter = JSONEventReporter(streamEvents: false)
         try reporter.attachLog(log)
         return (ScriptOutputRelay(reporter: reporter), log)

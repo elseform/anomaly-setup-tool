@@ -5,15 +5,15 @@ ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 APP_VERSION="0.96"
 BUILD_DIR="$ROOT_DIR/dist"
 INTERMEDIATES_DIR="$BUILD_DIR/intermediates"
-APP_DIR="$BUILD_DIR/GAMMA Setup Tool.app"
+APP_DIR="$BUILD_DIR/Anomaly Setup Tool.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
-SOURCE_RESOURCES_DIR="$ROOT_DIR/sources/GAMMASetupTool/Resources"
-BINARY="$MACOS_DIR/GAMMA Setup Tool"
-INTERMEDIATE_BINARY="$INTERMEDIATES_DIR/GAMMA Setup Tool"
-ENGINE_BINARY="$RESOURCES_DIR/gamma-setup-engine"
-INTERMEDIATE_ENGINE_BINARY="$INTERMEDIATES_DIR/gamma-setup-engine"
+SOURCE_RESOURCES_DIR="$ROOT_DIR/sources/AnomalySetupTool/Resources"
+BINARY="$MACOS_DIR/Anomaly Setup Tool"
+INTERMEDIATE_BINARY="$INTERMEDIATES_DIR/Anomaly Setup Tool"
+ENGINE_BINARY="$RESOURCES_DIR/anomaly-setup-engine"
+INTERMEDIATE_ENGINE_BINARY="$INTERMEDIATES_DIR/anomaly-setup-engine"
 MODULE_CACHE_DIR="$BUILD_DIR/module-cache"
 MODE="${1:-build}"
 
@@ -66,21 +66,21 @@ swiftc \
   -module-cache-path "$MODULE_CACHE_DIR" \
   -framework SwiftUI \
   -framework AppKit \
-  "$ROOT_DIR"/sources/GAMMASetupCore/*.swift \
-  "$ROOT_DIR"/sources/GAMMASetupTool/*.swift \
+  "$ROOT_DIR"/sources/AnomalySetupCore/*.swift \
+  "$ROOT_DIR"/sources/AnomalySetupTool/*.swift \
   -o "$INTERMEDIATE_BINARY"
 
 cp "$INTERMEDIATE_BINARY" "$BINARY"
 
 bash "$ROOT_DIR/scripts/build-launcher.sh" "$RESOURCES_DIR/launcher" "$APP_VERSION"
 
-if [[ "$MODE" != "run" ]] || is_stale "$INTERMEDIATE_ENGINE_BINARY" "$ROOT_DIR"/sources/GAMMASetupCore/*.swift "$ROOT_DIR"/sources/GAMMASetupEngine/main.swift; then
+if [[ "$MODE" != "run" ]] || is_stale "$INTERMEDIATE_ENGINE_BINARY" "$ROOT_DIR"/sources/AnomalySetupCore/*.swift "$ROOT_DIR"/sources/AnomalySetupEngine/main.swift; then
   swiftc \
     -O \
     -target arm64-apple-macosx26.0 \
     -module-cache-path "$MODULE_CACHE_DIR" \
-    "$ROOT_DIR"/sources/GAMMASetupCore/*.swift \
-    "$ROOT_DIR"/sources/GAMMASetupEngine/main.swift \
+    "$ROOT_DIR"/sources/AnomalySetupCore/*.swift \
+    "$ROOT_DIR"/sources/AnomalySetupEngine/main.swift \
     -o "$INTERMEDIATE_ENGINE_BINARY"
 fi
 
@@ -90,7 +90,7 @@ chmod +x "$ENGINE_BINARY"
 # The app icon is an Icon Composer document; actool compiles it into
 # Assets.car plus a SetupTool.icns fallback (full Xcode required, as for the
 # launcher icon above).
-if ! xcrun actool "$ROOT_DIR/sources/GAMMASetupTool/SetupTool.icon" \
+if ! xcrun actool "$ROOT_DIR/sources/AnomalySetupTool/SetupTool.icon" \
   --compile "$RESOURCES_DIR" --platform macosx --minimum-deployment-target 26.0 \
   --app-icon SetupTool --output-partial-info-plist "$INTERMEDIATES_DIR/setup-tool-icon-info.plist" \
   --output-format human-readable-text >/dev/null; then
@@ -101,8 +101,8 @@ if [[ -d "$SOURCE_RESOURCES_DIR/usvfs" ]]; then
   rm -rf "$RESOURCES_DIR/usvfs"
   cp -R "$SOURCE_RESOURCES_DIR/usvfs" "$RESOURCES_DIR/usvfs"
 fi
-# interactive_setup.py lives here now (sources/GAMMASetupTool/Resources/
-# wine-engine/), not in gamma-wine-engine — no cross-repo sync needed.
+# interactive_setup.py lives here now (sources/AnomalySetupTool/Resources/
+# wine-engine/), not in anomaly-wine-engine — no cross-repo sync needed.
 rm -rf "$RESOURCES_DIR/wine-engine"
 cp -R "$SOURCE_RESOURCES_DIR/wine-engine" "$RESOURCES_DIR/wine-engine"
 rm -rf "$RESOURCES_DIR/wine-engine/__pycache__"
@@ -116,17 +116,17 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
   <key>CFBundleExecutable</key>
-  <string>GAMMA Setup Tool</string>
+  <string>Anomaly Setup Tool</string>
   <key>CFBundleIconFile</key>
   <string>SetupTool</string>
   <key>CFBundleIconName</key>
   <string>SetupTool</string>
   <key>CFBundleIdentifier</key>
-  <string>com.elseform.gamma-setup-tool</string>
+  <string>com.elseform.anomaly-setup-tool</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
   <key>CFBundleName</key>
-  <string>GAMMA Setup Tool</string>
+  <string>Anomaly Setup Tool</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
@@ -151,9 +151,9 @@ fi
 
 if [[ "$MODE" == "build" ]]; then
   mkdir -p "$INSTALL_DIR"
-  rm -rf "$INSTALL_DIR/GAMMA Setup Tool.app"
-  cp -R "$APP_DIR" "$INSTALL_DIR/GAMMA Setup Tool.app"
-  printf '%s\n' "$INSTALL_DIR/GAMMA Setup Tool.app"
+  rm -rf "$INSTALL_DIR/Anomaly Setup Tool.app"
+  cp -R "$APP_DIR" "$INSTALL_DIR/Anomaly Setup Tool.app"
+  printf '%s\n' "$INSTALL_DIR/Anomaly Setup Tool.app"
 fi
 
 if [[ "$MODE" == "run" ]]; then

@@ -2,7 +2,7 @@ import Foundation
 
 final class AppSettingsStoreTests {
     func testModOrganizerValidationRequiresExecutableNameAndFile() throws {
-        let temp = try makeTempDir("gamma-settings-mo2-validation")
+        let temp = try makeTempDir("anomaly-settings-mo2-validation")
         defer { try? FileManager.default.removeItem(at: temp) }
         let mo2 = temp.appendingPathComponent("ModOrganizer.exe")
         let other = temp.appendingPathComponent("Other.exe")
@@ -22,7 +22,7 @@ final class AppSettingsStoreTests {
     /// folder-scan helper are gone — the app takes an explicit ModOrganizer.exe
     /// through NSOpenPanel instead.
     func testAppSettingsSaveAndLoadRoundTripsGammaPath() throws {
-        let temp = try makeTempDir("gamma-settings-save")
+        let temp = try makeTempDir("anomaly-settings-save")
         defer { try? FileManager.default.removeItem(at: temp) }
         let settingsURL = temp.appendingPathComponent("settings/settings.json")
         let mo2 = temp.appendingPathComponent("GAMMA/ModOrganizer.exe")
@@ -35,7 +35,7 @@ final class AppSettingsStoreTests {
     }
 
     func testAppSettingsLoadIgnoresMissingAndMalformedFiles() throws {
-        let temp = try makeTempDir("gamma-settings-malformed")
+        let temp = try makeTempDir("anomaly-settings-malformed")
         defer { try? FileManager.default.removeItem(at: temp) }
         let missing = temp.appendingPathComponent("missing.json")
         let malformed = temp.appendingPathComponent("malformed.json")
@@ -47,7 +47,7 @@ final class AppSettingsStoreTests {
     }
 
     func testEnsureSettingsFileExistsCreatesDefaultJson() throws {
-        let temp = try makeTempDir("gamma-settings-ensure")
+        let temp = try makeTempDir("anomaly-settings-ensure")
         defer { try? FileManager.default.removeItem(at: temp) }
         let settingsURL = temp.appendingPathComponent("settings.json")
 
@@ -58,7 +58,7 @@ final class AppSettingsStoreTests {
     }
 
     func testEnsureSettingsFileExistsDoesNotOverwriteAnExistingFile() throws {
-        let temp = try makeTempDir("gamma-settings-preserve")
+        let temp = try makeTempDir("anomaly-settings-preserve")
         defer { try? FileManager.default.removeItem(at: temp) }
         let settingsURL = temp.appendingPathComponent("settings.json")
         try AppSettingsStore.save(settings: AppSettings(gammaPath: "/Games/GAMMA/ModOrganizer.exe"), to: settingsURL)

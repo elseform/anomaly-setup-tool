@@ -1,10 +1,10 @@
-# GAMMA Setup Tool
+# Anomaly Setup Tool
 
 Status: current development version, 0.96 (`dev` branch).
 
-Native macOS tool for creating a Wine `.app` wrapper around an existing S.T.A.L.K.E.R. G.A.M.M.A. installation, using [gamma-wine-engine](https://github.com/elseform/gamma-wine-engine) and DXMT. It does not install G.A.M.M.A.
+Native macOS tool for creating a Wine `.app` wrapper around an existing S.T.A.L.K.E.R. G.A.M.M.A. installation, using [anomaly-wine-engine](https://github.com/elseform/anomaly-wine-engine) and DXMT. It does not install G.A.M.M.A.
 
-This README describes the current source. Published builds are available on the [Releases page](https://github.com/elseform/gamma-setup-tool/releases); check the version and release notes before following these instructions with an older build.
+This README describes the current source. Published builds are available on the [Releases page](https://github.com/elseform/anomaly-setup-tool/releases); check the version and release notes before following these instructions with an older build.
 
 ## Requirements
 
@@ -15,7 +15,7 @@ This README describes the current source. Published builds are available on the 
 
 ## Create a Wrapper
 
-Extract the downloaded setup-tool archive and open `GAMMA Setup Tool.app`, or [build the current source](#build-and-test). Builds made by `build.sh` are ad-hoc signed, not notarized.
+Extract the downloaded setup-tool archive and open `Anomaly Setup Tool.app`, or [build the current source](#build-and-test). Builds made by `build.sh` are ad-hoc signed, not notarized.
 
 1. On the first page, click **Choose…** and select `ModOrganizer.exe` from your existing installation. You can select another `.exe` as the launch target instead. The page then says whether setup will update ModOrganizer's `usvfs` files.
 2. The app name is filled in from the selected executable (`ModOrganizer` for `ModOrganizer.exe`), with `-2`, `-3`, and so on added if an app of that name already exists in `~/Applications`. Change it if you like, then click **Continue**.
@@ -27,7 +27,7 @@ Setup checks the selected executable exists; it does not validate the contents o
 
 ## Engine Selection and Downloads
 
-With **Engine archive** empty, setup always uses the newest `engine-*` release from `elseform/gamma-wine-engine`, ordered by engine version. It downloads the archive and verifies its SHA-256 against the release manifest. Cached archives are checked by checksum before reuse.
+With **Engine archive** empty, setup always uses the newest `engine-*` release from `elseform/anomaly-wine-engine`, ordered by engine version. It downloads the archive and verifies its SHA-256 against the release manifest. Cached archives are checked by checksum before reuse.
 
 A local archive is used exactly as selected, with no version check. Automatic selection needs access to the release listing and manifest even when the archive is cached; offline, select a local archive.
 
@@ -45,7 +45,7 @@ The engine manifest controls the actual files and checksums; selecting a folder 
 
 Setup mounts the game root as `G:` and the host root as `Z:`. The wizard derives the game root as the parent of the selected executable's containing directory; review the mapping before creating the wrapper, especially with a custom executable.
 
-After wrapper creation, setup checks the bundled USVFS files against the selected executable's folder. It updates them only if that folder contains `ModOrganizer.exe`. Existing files that differ are backed up inside that folder under `gamma-setup-tool-backups/usvfs-<timestamp>/` before replacement; matching files are left alone. A custom executable outside a ModOrganizer folder receives no USVFS files.
+After wrapper creation, setup checks the bundled USVFS files against the selected executable's folder. It updates them only if that folder contains `ModOrganizer.exe`. Existing files that differ are backed up inside that folder under `anomaly-setup-tool-backups/usvfs-<timestamp>/` before replacement; matching files are left alone. A custom executable outside a ModOrganizer folder receives no USVFS files.
 
 ## Settings, Logs, and Caches
 
@@ -63,19 +63,19 @@ Setup seeds defaults with no launch arguments. The wrapper saves settings automa
 
 Launch output goes to `~/Library/Logs/<app name>/launcher.log`. The native UI quits after creating the launcher process; later Wine or game failures are recorded in that log. The CLI helper at `Contents/MacOS/launcher` remains available, including explicit argument forwarding.
 
-New wrappers use the setup tool's own `SetupTool.icon` artwork. Both modern appearance assets and an `.icns` fallback are packaged. The green `Gamma.icon` artwork stays in `sources/GAMMALauncher/Resources/` but is not used. Existing installed wrappers are not modified.
+New wrappers use the setup tool's own `SetupTool.icon` artwork. Both modern appearance assets and an `.icns` fallback are packaged. The green `Anomaly.icon` artwork stays in `sources/AnomalyLauncher/Resources/` but is not used. Existing installed wrappers are not modified.
 
 With **Save setup log** enabled, setup events are written to:
 
 ```text
-~/Library/Logs/gamma-setup-tool/<app name>-YYYYMMDD-HHMMSS.log
+~/Library/Logs/anomaly-setup-tool/<app name>-YYYYMMDD-HHMMSS.log
 ```
 
 Downloads are cached at:
 
 ```text
-~/Library/Application Support/gamma-setup-tool/cache/gamma-wine-engine/
-~/Library/Application Support/gamma-setup-tool/cache/redist-installers/
+~/Library/Application Support/anomaly-setup-tool/cache/anomaly-wine-engine/
+~/Library/Application Support/anomaly-setup-tool/cache/redist-installers/
 ```
 
 For failed setup, use the detailed log and the GAMMA Discord link in the app.
@@ -88,40 +88,40 @@ Building requires full Xcode with Icon Composer-capable `actool`, selected throu
 ./build.sh
 ```
 
-This compiles the GUI and backend with `swiftc` for Apple Silicon and macOS 26, builds and ad-hoc signs `dist/GAMMA Setup Tool.app`, then replaces `~/Applications/GAMMA Setup Tool.app` with that build. No Xcode project or sibling engine checkout is required. The build also compiles the native wrapper UI and icon; end users need no compiler or Xcode.
+This compiles the GUI and backend with `swiftc` for Apple Silicon and macOS 26, builds and ad-hoc signs `dist/Anomaly Setup Tool.app`, then replaces `~/Applications/Anomaly Setup Tool.app` with that build. No Xcode project or sibling engine checkout is required. The build also compiles the native wrapper UI and icon; end users need no compiler or Xcode.
 
 - `./build.sh run` builds and runs the GUI from `dist/` without installing it.
 - `./build.sh clean` removes `dist/`.
 - `./test.sh` runs Swift unit tests, backend CLI integration tests, and a build smoke test. The smoke test runs `build.sh bundle`, which builds `dist/` without installing anything.
 
-After every change to the source, run `./build.sh` so that `~/Applications/GAMMA Setup Tool.app` is a copy of the current source. `./test.sh` does not install.
+After every change to the source, run `./build.sh` so that `~/Applications/Anomaly Setup Tool.app` is a copy of the current source. `./test.sh` does not install.
 
-Developers can set `GAMMA_ENGINE_ARTIFACTS_DIR` in the app's environment to prefill the local archive field with the most recently modified `.tar.xz` in that directory.
+Developers can set `ANOMALY_ENGINE_ARTIFACTS_DIR` in the app's environment to prefill the local archive field with the most recently modified `.tar.xz` in that directory.
 
 ### Source Layout
 
 | Path | Responsibility |
 | --- | --- |
-| `sources/GAMMASetupTool/` | SwiftUI wizard, setup state, request construction, progress display, and the app's `SetupTool.icon`. |
-| `sources/GAMMALauncher/` | Native wrapper settings, target picker, launch tiles, and the unused green `Gamma.icon`. |
-| `sources/GAMMASetupCore/` | Shared models, engine release resolution, checksum verification, wrapper pipeline, and USVFS updates. |
-| `sources/GAMMASetupEngine/` | `gamma-setup-engine` CLI backend, called by the GUI through `create-wine-engine`. |
-| `sources/GAMMASetupTool/Resources/wine-engine/interactive_setup.py` | Canonical wrapper-creation script, bundled by `build.sh`. |
+| `sources/AnomalySetupTool/` | SwiftUI wizard, setup state, request construction, progress display, and the app's `SetupTool.icon`. |
+| `sources/AnomalyLauncher/` | Native wrapper settings, target picker, launch tiles, and the unused green `Anomaly.icon`. |
+| `sources/AnomalySetupCore/` | Shared models, engine release resolution, checksum verification, wrapper pipeline, and USVFS updates. |
+| `sources/AnomalySetupEngine/` | `anomaly-setup-engine` CLI backend, called by the GUI through `create-wine-engine`. |
+| `sources/AnomalySetupTool/Resources/wine-engine/interactive_setup.py` | Canonical wrapper-creation script, bundled by `build.sh`. |
 | `tests/` | Swift unit tests and shell CLI integration tests. |
 
-`Package.swift` defines the wizard, setup backend, and `GAMMALauncher` executable products. `build.sh` assembles the distributable app bundle and its backend and resources.
+`Package.swift` defines the wizard, setup backend, and `AnomalyLauncher` executable products. `build.sh` assembles the distributable app bundle and its backend and resources.
 
 ### Launcher resources and engine compatibility
 
-`build.sh bundle` creates `dist/GAMMA Setup Tool.app/Contents/Resources/launcher/`
-with `GAMMALauncher`, `SetupTool.icns`, `Assets.car`, and `icon-info.plist`.
+`build.sh bundle` creates `dist/Anomaly Setup Tool.app/Contents/Resources/launcher/`
+with `AnomalyLauncher`, `SetupTool.icns`, `Assets.car`, and `icon-info.plist`.
 The setup backend passes this directory to `interactive_setup.py` through
 `--launcher-resources`; direct script callers must supply it too. Missing or
 invalid resources fail before wrapper or prefix changes. Run the bundle build
 before using the development CLI from SwiftPM.
 
 The UI and icon come from setup-tool, not the engine archive. Engine archives
-with or without the former `share/gamma/Configurator.app` are accepted, subject
+with or without the former `share/anomaly/Configurator.app` are accepted, subject
 to the existing runtime requirements. Older setup-tool builds still require that
 former archive layout; ship updated setup-tool support before publishing engines
 without Configurator. No engine-version gate has been added.

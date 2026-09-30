@@ -5,7 +5,7 @@ struct LauncherTests {
     @MainActor
     static func main() throws {
         let fm = FileManager.default
-        let root = fm.temporaryDirectory.appendingPathComponent("gamma-launcher-tests-\(UUID().uuidString)")
+        let root = fm.temporaryDirectory.appendingPathComponent("anomaly-launcher-tests-\(UUID().uuidString)")
         try fm.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? fm.removeItem(at: root) }
         func check(_ condition: Bool, _ message: String) {
@@ -14,19 +14,19 @@ struct LauncherTests {
         let literals = ["G:\\A B\\O'Brien.exe", "quotes \" $HOME `id` $(id) \\ end", "", "semi;colon", "Unicode Ж"]
         for value in literals { check(unquote(shellQuote(value)) == value, "shell literal round trip: \(value)") }
         let shown = SettingCategory.allCases.flatMap(\.groups).flatMap(\.settings).map(\.key)
-        let expected = schema.map(\.key).filter { $0 != "GAMMA_GRAPHICS_BACKEND" } + dxmtConfigKeys.map(\.key)
+        let expected = schema.map(\.key).filter { $0 != "ANOMALY_GRAPHICS_BACKEND" } + dxmtConfigKeys.map(\.key)
         check(shown.count == Set(shown).count, "every setting is listed once")
         check(Set(shown) == Set(expected), "every setting has a category")
         check(SettingCategory.about.groups.isEmpty && SettingCategory.about.sidebarSection == .info, "About lists no settings")
         check(SettingCategory.play.groups.isEmpty && SettingCategory.play.sidebarSection == .home, "launch grid lists no settings")
         check(SettingCategory.allCases.first == .play && SettingCategory.launchOptions.title == "Launch options", "grid comes first")
-        let manifest = #"{"versionLabel":"CX26-W11-GAMMA","buildNumber":19,"engineId":"cx26-w11-gamma","base":{"crossover":"26.3.0","wine":"11.16"},"dxmt":{"tag":"gamma-2026.09.27.1","commit":"fc8c94702375f19f5161fc970a251aecdfc5d4de"}}"#
+        let manifest = #"{"versionLabel":"CX26-W11-ANOMALY","buildNumber":19,"engineId":"cx26-w11-anomaly","base":{"crossover":"26.3.0","wine":"11.16"},"dxmt":{"tag":"anomaly-2026.09.27.1","commit":"fc8c94702375f19f5161fc970a251aecdfc5d4de"}}"#
         let info = try JSONDecoder().decode(EngineInfo.self, from: Data(manifest.utf8))
-        check(info.versionLabel == "CX26-W11-GAMMA" && info.buildNumber == 19, "engine label and build")
+        check(info.versionLabel == "CX26-W11-ANOMALY" && info.buildNumber == 19, "engine label and build")
         check(info.base?.wine == "11.16", "engine wine version")
-        check(info.releaseURL?.absoluteString == "https://github.com/elseform/gamma-wine-engine/releases/tag/engine-cx26-w11-gamma-19", "engine release link")
-        check(info.dxmt?.releaseURL?.absoluteString == "https://github.com/elseform/dxmt/releases/tag/gamma-2026.09.27.1", "dxmt release link")
-        check(info.dxmt?.tag == "gamma-2026.09.27.1" && info.dxmt?.shortCommit == "fc8c947", "dxmt tag and short commit")
+        check(info.releaseURL?.absoluteString == "https://github.com/elseform/anomaly-wine-engine/releases/tag/engine-cx26-w11-anomaly-19", "engine release link")
+        check(info.dxmt?.releaseURL?.absoluteString == "https://github.com/elseform/dxmt/releases/tag/anomaly-2026.09.27.1", "dxmt release link")
+        check(info.dxmt?.tag == "anomaly-2026.09.27.1" && info.dxmt?.shortCommit == "fc8c947", "dxmt tag and short commit")
         check(try JSONDecoder().decode(EngineInfo.self, from: Data("{}".utf8)).dxmt == nil, "manifest without dxmt still decodes")
         let wrapper = root.appendingPathComponent("Test.app")
         let resources = wrapper.appendingPathComponent("Contents/Resources")
@@ -88,7 +88,7 @@ struct LauncherTests {
         check(model.launchEntries[1].arguments == ["moshortcut://Anomaly (DX11)"] && model.launchEntries[2].arguments == ["moshortcut://Anomaly (DX11-AVX)"], "Anomaly tiles are MO2 shortcuts")
         check(model.state.vars["DEFAULT_GAME_ARGS"]?.value == "-dbg", "paths keep args")
         model.clearTarget(.modOrganizer)
-        check(model.launchEntries.map(\.kind) == [.custom] && loadState(configFile: config.path).passthrough["GAMMA_MO2_EXE_PATH"] == "''", "clearing MO2 hides its tiles and stays cleared")
+        check(model.launchEntries.map(\.kind) == [.custom] && loadState(configFile: config.path).passthrough["ANOMALY_MO2_EXE_PATH"] == "''", "clearing MO2 hides its tiles and stays cleared")
         model.selectTarget(mo2, slot: .modOrganizer)
         model.resetToDefaults()
         check(model.path(for: .custom) == selected.windowsPath && model.path(for: .modOrganizer) == external.windowsPath, "reset preserves paths")

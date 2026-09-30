@@ -13,15 +13,15 @@ import unittest
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
-spec = importlib.util.spec_from_file_location("setup", ROOT / "sources/GAMMASetupTool/Resources/wine-engine/interactive_setup.py")
+spec = importlib.util.spec_from_file_location("setup", ROOT / "sources/AnomalySetupTool/Resources/wine-engine/interactive_setup.py")
 setup = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(setup)
-RESOURCES = ROOT / "dist/GAMMA Setup Tool.app/Contents/Resources/launcher"
+RESOURCES = ROOT / "dist/Anomaly Setup Tool.app/Contents/Resources/launcher"
 
 
 class WrapperTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory(prefix="gamma-wrapper-test-")
+        self.temp = tempfile.TemporaryDirectory(prefix="anomaly-wrapper-test-")
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.home = self.root / "home"
@@ -40,7 +40,7 @@ class WrapperTests(unittest.TestCase):
         (tree / "bin/wine").chmod(0o755)
         (tree / "lib/wine/x86_64-unix/cxcompatdb.so").touch()
         if legacy:
-            (tree / "share/gamma/Configurator.app").mkdir(parents=True)
+            (tree / "share/anomaly/Configurator.app").mkdir(parents=True)
         archive = self.root / "engine.tar.xz"
         with tarfile.open(archive, "w:xz") as tf:
             tf.add(tree, arcname="wswine.bundle")
@@ -49,14 +49,14 @@ class WrapperTests(unittest.TestCase):
     def args(self, archive):
         return setup.build_arg_parser().parse_args([
             "--yes", "--archive", str(archive), "--launcher-resources", str(RESOURCES),
-            "--app-name", "Gamma Test", "--app-parent", str(self.root / "apps"),
+            "--app-name", "Anomaly Test", "--app-parent", str(self.root / "apps"),
             "--gamma-root", str(self.game), "--exe-rel-path", "ModOrganizer.exe"])
 
     def assemble(self, legacy=False):
         args = self.args(self.archive(legacy))
         with patch.object(Path, "home", return_value=self.home), patch.object(setup, "run", return_value=(0, "")), patch.object(setup, "install_redistributables", return_value=[]), patch.object(setup, "log"), patch.object(setup, "artifact_event"):
             setup.run_setup(args)
-        return self.root / "apps/Gamma Test.app"
+        return self.root / "apps/Anomaly Test.app"
 
     def test_assembly_without_configurator(self):
         self.check_assembly(self.assemble())
@@ -66,7 +66,7 @@ class WrapperTests(unittest.TestCase):
 
     def check_assembly(self, app):
         info = plistlib.loads((app / "Contents/Info.plist").read_bytes())
-        self.assertEqual(info["CFBundleExecutable"], "GAMMALauncher")
+        self.assertEqual(info["CFBundleExecutable"], "AnomalyLauncher")
         self.assertEqual(info["CFBundleIconName"], "SetupTool")
         self.assertEqual(info["CFBundleIconFile"], "SetupTool")
         self.assertEqual(info["LSMinimumSystemVersion"], "26.0")
@@ -76,7 +76,7 @@ class WrapperTests(unittest.TestCase):
             self.assertEqual((app / "Contents/Resources" / name).read_bytes(), (RESOURCES / name).read_bytes())
         for name in ("launcher", "winecfg", "winetricks"):
             subprocess.run(["/bin/bash", "-n", str(app / "Contents/MacOS" / name)], check=True)
-        config = self.home / "Library/Application Support/Gamma Test/app.env"
+        config = self.home / "Library/Application Support/Anomaly Test/app.env"
         shell = subprocess.check_output(["/bin/bash", "-c", 'source "$1"; printf "%s" "$EXE_RUN_DIR"', "test", str(config)], text=True)
         self.assertEqual(shell, str(self.game))
         self.assertIn("d3d11.sampleNaNToZero=true;", config.read_text())
@@ -95,7 +95,7 @@ class WrapperTests(unittest.TestCase):
 
     def test_failed_assembly_preserves_previous_support(self):
         args = self.args(self.archive())
-        support = self.home / "Library/Application Support/Gamma Test"
+        support = self.home / "Library/Application Support/Anomaly Test"
         support.mkdir(parents=True)
         original = support / "app.env"
         original.write_text("original settings")
@@ -104,7 +104,7 @@ class WrapperTests(unittest.TestCase):
                 setup.run_setup(args)
             setup._cleanup_partial_wrapper()
         self.assertEqual(original.read_text(), "original settings")
-        self.assertFalse((self.root / "apps/Gamma Test.app").exists())
+        self.assertFalse((self.root / "apps/Anomaly Test.app").exists())
 
     def test_helper_suppresses_only_default_mo2_arguments(self):
         app = self.assemble()
@@ -115,7 +115,7 @@ class WrapperTests(unittest.TestCase):
             (stubdir / name).chmod(0o755)
         wine = app / "Contents/Resources/engine/bin/wine"
         wine.write_text('#!/bin/sh\n[ "$1" = reg ] && exit 0\nprintf "%s\\n" "$@"\n')
-        config = self.home / "Library/Application Support/Gamma Test/app.env"
+        config = self.home / "Library/Application Support/Anomaly Test/app.env"
         env = dict(os.environ, PATH=str(stubdir) + ":/usr/bin:/bin")
         helper = app / "Contents/MacOS/launcher"
         for target, explicit, expected in [(r"G:\ModOrganizer.exe", [], []), (r"G:\MODORGANIZER.EXE", ["--explicit"], ["--explicit"]), (r"G:\AnomalyDX11.exe", [], ["-dbg", "-nointro"])]:

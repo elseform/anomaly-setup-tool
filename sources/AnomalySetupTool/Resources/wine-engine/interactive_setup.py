@@ -1,0 +1,985 @@
+#!/usr/bin/env python3
+"""Interactive setup: builds a macOS .app around the packaged Wine engine.
+
+Bundle layout:
+  <App>.app/Contents/MacOS/launcher        thin launcher, paths baked in
+  <App>.app/Contents/MacOS/winetricks      prefix-aware winetricks launcher
+  <App>.app/Contents/Resources/engine/     engine tree (read-only, signed)
+
+Mutable state lives outside the bundle so the app stays signable and
+replaceable:
+  ~/Library/Application Support/<App>/prefix    Wine prefix
+  ~/Library/Application Support/<App>/app.env   user-editable settings
+
+Requires prebuilt --launcher-resources from anomaly-setup-tool. Stdlib-only: no
+third-party Python dependencies, so this still works from just a released
+archive on a machine that has never seen this repo (only `python3` itself,
+plus Wine, tar, codesign and lsregister).
+
+Every prompt below has a matching flag (see --help). Any flag given skips
+its prompt; anything left unset still prompts interactively — fully
+interactive, fully flag-driven, and mixed all work through the same code
+path. Pass --json to emit newline-delimited JSON progress events instead of
+plain text (matching anomaly-setup-tool's SetupEngineEvent schema) for
+programmatic driving; --json requires every input to be supplied via flags
+(including --yes), since it never blocks on stdin.
+"""
+import argparse
+import importlib.util
+import json
+import os
+import plistlib
+import shlex
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+import traceback
+from pathlib import Path
+
+SCRIPT_DIR = Path(__file__).resolve().parent
+
+JSON_MODE = False
+_CURRENT_STAGE = None
+# Populated by run_setup once app_path/app_support are known, so a failure
+# (SetupError or Ctrl+C) anywhere after that point can remove the partial
+# wrapper instead of leaving broken debris behind.
+_cleanup_paths: list = []
+
+
+class SetupError(RuntimeError):
+    pass
+
+
+# ---------------------------------------------------------------------------
+# Event/log emission (text banners in plain mode, SetupEngineEvent-shaped
+# newline-delimited JSON in --json mode).
+# ---------------------------------------------------------------------------
+
+def _emit(event: dict) -> None:
+    print(json.dumps(event), flush=True)
+
+
+def log(message: str, *, severity: str = "info") -> None:
+    if JSON_MODE:
+        _emit({"type": "log", "message": message, "severity": severity})
+    else:
+        print(message)
+
+
+def err(message: str) -> None:
+    if JSON_MODE:
+        _emit({"type": "log", "message": message, "severity": "error"})
+    else:
+        print(message, file=sys.stderr)
+
+
+def stage_started(stage: str, message: str = None) -> None:
+    global _CURRENT_STAGE
+    _CURRENT_STAGE = stage
+    if JSON_MODE:
+        _emit({"type": "stageStarted", "stage": stage, "message": message})
+    else:
+        print(f"\n{message or ('==> ' + stage)}")
+
+
+def stage_finished(stage: str, message: str = None) -> None:
+    if JSON_MODE:
+        _emit({"type": "stageFinished", "stage": stage, "message": message})
+
+
+def stage_failed(stage: str, message: str) -> None:
+    if JSON_MODE:
+        _emit({"type": "stageFailed", "stage": stage, "message": message, "severity": "error"})
+
+
+def artifact_event(path: Path) -> None:
+    if JSON_MODE:
+        _emit({"type": "artifact", "path": str(path)})
+
+
+def completed(success: bool, message: str = None) -> None:
+    if JSON_MODE:
+        _emit({"type": "completed", "success": success, "message": message})
+    elif message:
+        print(message)
+
+
+# ---------------------------------------------------------------------------
+# Prompt helpers
+# ---------------------------------------------------------------------------
+
+def prompt(message: str, default: str, override: str = None) -> str:
+    if override is not None:
+        log(f"{message} [{default}]: {override}")
+        return override
+    if JSON_MODE:
+        raise SetupError(
+            f"missing required value for '{message}' in --json mode "
+            f"(pass the corresponding flag; --json never blocks on stdin)"
+        )
+    reply = input(f"{message} [{default}]: ").strip()
+    return reply or default
+
+
+def confirm_yes_no(message: str, default_yes: bool) -> bool:
+    if JSON_MODE:
+        raise SetupError(f"confirmation required for '{message}' in --json mode")
+    suffix = "[Y/n]" if default_yes else "[y/N]"
+    reply = input(f"{message} {suffix}: ").strip().lower()
+    if not reply:
+        return default_yes
+    return reply.startswith("y")
+
+
+# ---------------------------------------------------------------------------
+# Subprocess helpers
+# ---------------------------------------------------------------------------
+
+def run(cmd, *, env: dict = None, cwd=None, check: bool = True, quiet: bool = False,
+        input_text: str = None):
+    proc_env = os.environ.copy()
+    if env:
+        proc_env.update(env)
+    if input_text is not None:
+        proc = subprocess.run(
+            cmd, cwd=cwd, env=proc_env, input=input_text, text=True,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        )
+        output = proc.stdout or ""
+        for line in output.splitlines():
+            if not quiet:
+                log(line)
+        returncode = proc.returncode
+    else:
+        proc = subprocess.Popen(
+            cmd, cwd=cwd, env=proc_env, text=True, bufsize=1,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+        )
+        lines = []
+        for line in proc.stdout:
+            line = line.rstrip("\n")
+            lines.append(line)
+            if not quiet:
+                log(line)
+        proc.wait()
+        returncode = proc.returncode
+        output = "\n".join(lines)
+    if check and returncode != 0:
+        raise SetupError(f"command failed ({returncode}): {' '.join(str(c) for c in cmd)}\n{output}")
+    return returncode, output
+
+
+# ---------------------------------------------------------------------------
+# Batched registry writes. Each `wine reg add` is its own full Rosetta+Wine
+# process spawn (visible as one "anomaly-cxcompatdb:info: ..." line per call in
+# --json log output) — with ~30 redist DLL overrides alone, that was ~36
+# separate process launches serialized end to end, the actual cause of the
+# "Step 2.4" phase taking minutes instead of seconds. One `regedit /S` import
+# applies all of them in a single process launch.
+# ---------------------------------------------------------------------------
+
+_PENDING_REG = []
+
+
+def queue_reg(key_path: str, name: str, reg_type: str, data: str) -> None:
+    _PENDING_REG.append((key_path, name, reg_type, data))
+
+
+def _reg_escape(value: str) -> str:
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def flush_reg_queue(engine_dir: Path, wineprefix: Path) -> None:
+    global _PENDING_REG
+    if not _PENDING_REG:
+        return
+    grouped = {}
+    for key_path, name, reg_type, data in _PENDING_REG:
+        grouped.setdefault(key_path, []).append((name, reg_type, data))
+    # REGEDIT4 (not "Windows Registry Editor Version 5.00"): plain ASCII/UTF-8
+    # text, no UTF-16 BOM required — simpler to write correctly and Wine's
+    # regedit has always supported this classic format.
+    lines = ["REGEDIT4", ""]
+    for key_path, entries in grouped.items():
+        lines.append(f"[{key_path}]")
+        for name, reg_type, data in entries:
+            if reg_type == "REG_DWORD":
+                lines.append(f'"{_reg_escape(name)}"=dword:{int(data):08x}')
+            else:
+                lines.append(f'"{_reg_escape(name)}"="{_reg_escape(data)}"')
+        lines.append("")
+    with tempfile.NamedTemporaryFile("w", suffix=".reg", delete=False) as handle:
+        handle.write("\n".join(lines) + "\n")
+        reg_path = handle.name
+    try:
+        run(wine_cmd(engine_dir, "regedit", "/S", reg_path), env={"WINEPREFIX": str(wineprefix)}, quiet=True)
+    finally:
+        os.unlink(reg_path)
+    _PENDING_REG = []
+
+
+def x64(*args) -> list:
+    return ["arch", "-x86_64", *[str(a) for a in args]]
+
+
+def wine_cmd(engine_dir: Path, *args) -> list:
+    return x64(str(engine_dir / "bin/wine"), *args)
+
+
+def wineserver_cmd(engine_dir: Path, *args) -> list:
+    return x64(str(engine_dir / "bin/wineserver"), *args)
+
+
+# ---------------------------------------------------------------------------
+# Archive extraction (tar --strip-components=1 equivalent)
+# ---------------------------------------------------------------------------
+
+def _extract_stripped(tf: tarfile.TarFile, dest: Path) -> None:
+    for member in tf:
+        parts = member.name.split("/", 1)
+        if len(parts) < 2 or not parts[1]:
+            continue
+        # Skip macOS AppleDouble sidecar junk (._*) — a cross-volume copy
+        # anywhere upstream of packaging can leave these next to real files,
+        # and nothing downstream should ever see them as real engine content.
+        if Path(parts[1]).name.startswith("._"):
+            continue
+        # filter="tar" below guards against path traversal only on Python
+        # 3.12+, and /usr/bin/python3 is older, so the same rules are checked
+        # here for every version: relative paths inside the engine only, and
+        # symlinks that resolve inside it. Hard links are refused — their
+        # link names keep the stripped top-level folder, so they could not
+        # be extracted correctly anyway.
+        relative = Path(parts[1])
+        if relative.is_absolute() or ".." in relative.parts:
+            raise SetupError(f"unsafe path in engine archive: {member.name}")
+        if member.islnk():
+            raise SetupError(f"unexpected hard link in engine archive: {member.name}")
+        if member.issym():
+            resolved = os.path.normpath(os.path.join(str(relative.parent), member.linkname))
+            if os.path.isabs(member.linkname) or resolved == ".." or resolved.startswith("../"):
+                raise SetupError(f"symlink escapes the engine folder: {member.name} -> {member.linkname}")
+        member.name = parts[1]
+        # filter= (PEP 706) only exists on Python 3.12+; resolvePython3()
+        # (WineEngineSetup.swift) prefers /usr/bin/python3, which on
+        # macOS is frequently older (3.9.x on releases without an updated
+        # Xcode CLT install) — calling extract() with filter= there raises
+        # TypeError instead of extracting anything.
+        if sys.version_info >= (3, 12):
+            tf.extract(member, path=str(dest), filter="tar")
+        else:
+            tf.extract(member, path=str(dest))
+
+
+def extract_archive(artifact_path: Path, engine_dir: Path) -> None:
+    # .tar.xz only: Python's own lzma module reads it, so no external
+    # decompressor (such as Homebrew's zstd) is needed.
+    engine_dir.mkdir(parents=True, exist_ok=True)
+    if not artifact_path.name.endswith(".tar.xz"):
+        raise SetupError(f"Unsupported engine archive: {artifact_path} (expected .tar.xz)")
+    with tarfile.open(str(artifact_path), mode="r:xz") as tf:
+        _extract_stripped(tf, engine_dir)
+
+
+# ---------------------------------------------------------------------------
+# Generated bundle file templates (tokens avoid clashing with the literal
+# bash ${...} syntax these files must keep for their own runtime).
+# ---------------------------------------------------------------------------
+
+_LAUNCHER_TEMPLATE = """#!/usr/bin/env bash
+set -euo pipefail
+
+APP_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+ENGINE_DIR="$APP_DIR/Contents/Resources/engine"
+APP_SUPPORT=@@APP_SUPPORT@@
+CONFIG_FILE="$APP_SUPPORT/app.env"
+
+export WINEPREFIX="$APP_SUPPORT/prefix"
+
+# User settings (outside the bundle) win over the defaults below.
+if [[ -f "$CONFIG_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$CONFIG_FILE"
+fi
+
+# DXMT is the only backend. Always exported, overriding a stale app.env
+# value (for example a former d3dmetal), which cxcompatdb would refuse.
+export ANOMALY_GRAPHICS_BACKEND=dxmt
+export WINEMSYNC="${WINEMSYNC:-1}"
+export WINEESYNC="${WINEESYNC:-1}"
+export ROSETTA_ADVERTISE_AVX="${ROSETTA_ADVERTISE_AVX:-0}"
+export MTL_HUD_ENABLED="${MTL_HUD_ENABLED:-0}"
+export WINEDEBUG="${WINEDEBUG:--all}"
+export WINEBOOT_HIDE_DIALOG=1
+export LC_ALL="en_US.UTF-8"
+export LANG="en_US.UTF-8"
+
+# NGX/DLSS shim files: DXMT_ENABLE_NVEXT (gates dxgi.cpp's
+# InitializeVendorExtensionNV) additionally places DXMT's nvngx.dll and
+# nvapi64.dll directly in the prefix's system32 — some NGX/DLSS detection
+# paths check for the files there, not just Wine's own DLL search path
+# (which already resolves them from lib/dxmt via cxcompatdb regardless of
+# this toggle). Whatever was already at those two names in system32 gets
+# backed up as <name>.old before being overwritten, and restored the moment
+# the toggle goes back off; a name with no prior file is just removed again.
+ANOMALY_NVNGX_SYSTEM32="$WINEPREFIX/drive_c/windows/system32"
+if [[ -d "$ANOMALY_NVNGX_SYSTEM32" ]]; then
+  ANOMALY_NVNGX_SRC_DIR=""
+  if [[ "${DXMT_ENABLE_NVEXT:-1}" == "1" ]]; then
+    ANOMALY_NVNGX_SRC_DIR="$ENGINE_DIR/lib/dxmt/x86_64-windows"
+  fi
+  if [[ -n "$ANOMALY_NVNGX_SRC_DIR" ]]; then
+    for module in nvngx nvapi64; do
+      src="$ANOMALY_NVNGX_SRC_DIR/$module.dll"
+      dst="$ANOMALY_NVNGX_SYSTEM32/$module.dll"
+      [[ -f "$src" ]] || continue
+      if [[ ! -f "$dst.old" && -f "$dst" ]]; then
+        mv "$dst" "$dst.old"
+      fi
+      cp -f "$src" "$dst"
+    done
+  else
+    for module in nvngx nvapi64; do
+      dst="$ANOMALY_NVNGX_SYSTEM32/$module.dll"
+      if [[ -f "$dst.old" ]]; then
+        mv -f "$dst.old" "$dst"
+      elif [[ -f "$dst" ]]; then
+        rm -f "$dst"
+      fi
+    done
+  fi
+fi
+
+ANOMALY_RETINA_MODE="${ANOMALY_RETINA_MODE:-N}"
+WINEPREFIX="$WINEPREFIX" arch -x86_64 "$ENGINE_DIR/bin/wine" reg add \\
+  "HKEY_CURRENT_USER\\Software\\Wine\\Mac Driver" /v RetinaMode /t REG_SZ /d "$ANOMALY_RETINA_MODE" /f \\
+  >/dev/null 2>&1 || true
+if [[ "$ANOMALY_RETINA_MODE" == "Y" && -n "${ANOMALY_RETINA_LOGPIXELS:-}" ]]; then
+  WINEPREFIX="$WINEPREFIX" arch -x86_64 "$ENGINE_DIR/bin/wine" reg add \\
+    "HKEY_CURRENT_USER\\Software\\Wine\\Mac Driver" /v LogPixels /t REG_DWORD /d "$ANOMALY_RETINA_LOGPIXELS" /f \\
+    >/dev/null 2>&1 || true
+fi
+
+DEFAULT_EXE_PATH=@@EXE_WIN_PATH@@
+DEFAULT_EXE_RUN_DIR=@@EXE_RUN_DIR@@
+EXE_PATH="${EXE_PATH:-$DEFAULT_EXE_PATH}"
+EXE_RUN_DIR="${EXE_RUN_DIR:-$DEFAULT_EXE_RUN_DIR}"
+
+cd "$EXE_RUN_DIR"
+
+# Game-only defaults must not be sent to Mod Organizer. Explicit CLI
+# arguments remain available for callers intentionally controlling MO2.
+ANOMALY_TARGET_NAME="${EXE_PATH##*\\\\}"
+ANOMALY_TARGET_NAME="${ANOMALY_TARGET_NAME##*/}"
+shopt -s nocasematch
+if [[ "$ANOMALY_TARGET_NAME" == "ModOrganizer.exe" ]]; then
+  DEFAULT_GAME_ARGS=""
+fi
+shopt -u nocasematch
+
+# bash 3.2 on macOS chokes on "${@}" under set -u when empty
+if [[ $# -eq 0 && -n "${DEFAULT_GAME_ARGS:-}" ]]; then
+  # shellcheck disable=SC2086
+  set -- $DEFAULT_GAME_ARGS
+fi
+
+exec taskpolicy -l 0 -t 0 arch -x86_64 "$ENGINE_DIR/bin/wine" "$EXE_PATH" "$@"
+"""
+
+_WINETRICKS_LAUNCHER_TEMPLATE = """#!/usr/bin/env bash
+# Runs winetricks against this app's prefix with its bundled Wine engine.
+set -euo pipefail
+
+APP_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+ENGINE_DIR="$APP_DIR/Contents/Resources/engine"
+APP_SUPPORT=@@APP_SUPPORT@@
+export WINEPREFIX=@@WINEPREFIX@@
+
+if [[ ! -x "$ENGINE_DIR/bin/wine" || ! -x "$ENGINE_DIR/bin/wineserver" ]]; then
+  echo "error: bundled Wine engine is incomplete: $ENGINE_DIR" >&2
+  exit 1
+fi
+
+WINETRICKS_BIN="${WINETRICKS_BIN:-}"
+if [[ -z "$WINETRICKS_BIN" ]]; then
+  for candidate in \\
+    "$APP_SUPPORT/cache/winetricks/winetricks" \\
+    /opt/homebrew/bin/winetricks \\
+    /usr/local/bin/winetricks; do
+    if [[ -x "$candidate" ]]; then
+      WINETRICKS_BIN="$candidate"
+      break
+    fi
+  done
+fi
+if [[ -z "$WINETRICKS_BIN" ]]; then
+  candidate="$(command -v winetricks 2>/dev/null || true)"
+  if [[ -n "$candidate" && "$candidate" != "$0" ]]; then
+    WINETRICKS_BIN="$candidate"
+  fi
+fi
+if [[ -z "$WINETRICKS_BIN" || ! -x "$WINETRICKS_BIN" ]]; then
+  echo "error: winetricks not found; install it or set WINETRICKS_BIN to its executable path" >&2
+  exit 1
+fi
+
+WRAP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/anomaly-winetricks.XXXXXX")"
+cleanup() {
+  rm -rf "$WRAP_DIR"
+}
+trap cleanup EXIT
+
+cat > "$WRAP_DIR/wine-wrapper" << 'WRAPPER_EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+binary="$(basename "$0")"
+if [[ "$binary" == "wine64" && ! -x "$ANOMALY_WINETRICKS_ENGINE/bin/wine64" ]]; then
+  binary=wine
+fi
+exec arch -x86_64 "$ANOMALY_WINETRICKS_ENGINE/bin/$binary" "$@"
+WRAPPER_EOF
+chmod +x "$WRAP_DIR/wine-wrapper"
+ln -s wine-wrapper "$WRAP_DIR/wine"
+ln -s wine-wrapper "$WRAP_DIR/wine64"
+ln -s wine-wrapper "$WRAP_DIR/wineserver"
+
+export ANOMALY_WINETRICKS_ENGINE="$ENGINE_DIR"
+export WINE="$WRAP_DIR/wine"
+export WINE64="$WRAP_DIR/wine64"
+export WINESERVER="$WRAP_DIR/wineserver"
+export WINELOADER="$WRAP_DIR/wine"
+export W_CACHE="$APP_SUPPORT/cache/winetricks/downloads"
+export PATH="$WRAP_DIR:$PATH"
+
+echo "engine:     $ENGINE_DIR"
+echo "prefix:     $WINEPREFIX"
+echo "winetricks: $WINETRICKS_BIN $*"
+echo
+
+status=0
+"$WINETRICKS_BIN" "$@" || status=$?
+exit "$status"
+"""
+
+_WINECFG_LAUNCHER_TEMPLATE = """#!/usr/bin/env bash
+# Opens winecfg for this app's prefix with its bundled Wine engine.
+set -euo pipefail
+
+APP_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+ENGINE_DIR="$APP_DIR/Contents/Resources/engine"
+APP_SUPPORT=@@APP_SUPPORT@@
+CONFIG_FILE="$APP_SUPPORT/app.env"
+export WINEPREFIX=@@WINEPREFIX@@
+
+if [[ ! -x "$ENGINE_DIR/bin/wine" || ! -f "$ENGINE_DIR/lib/wine/x86_64-windows/winecfg.exe" ]]; then
+  echo "error: bundled Wine engine has no winecfg: $ENGINE_DIR" >&2
+  exit 1
+fi
+
+if [[ -f "$CONFIG_FILE" ]]; then
+  # shellcheck disable=SC1090
+  source "$CONFIG_FILE"
+fi
+export ANOMALY_GRAPHICS_BACKEND=dxmt
+
+echo "engine: $ENGINE_DIR"
+echo "prefix: $WINEPREFIX"
+echo
+
+exec arch -x86_64 "$ENGINE_DIR/bin/wine" \\
+  "$ENGINE_DIR/lib/wine/x86_64-windows/winecfg.exe" "$@"
+"""
+
+
+DEFAULT_REDIST_CACHE = (
+    Path.home() / "Library/Application Support/anomaly-setup-tool/cache/redist-installers"
+)
+
+
+def load_redist_fetcher(engine_dir: Path):
+    """Import the redist fetcher the engine archive carries.
+
+    The engine declares which Microsoft DLLs it needs in its own
+    share/anomaly/redist-manifest.json and ships the code that obtains them, so
+    this script needs no knowledge of Microsoft's installers — and no copy of
+    their DLLs, which are not ours to redistribute.
+    """
+    manifest_path = engine_dir / "share/anomaly/redist-manifest.json"
+    module_path = engine_dir / "share/anomaly/redist-fetch/anomaly_redist.py"
+    if not manifest_path.is_file() or not module_path.is_file():
+        raise SetupError(
+            "this engine archive predates the redist manifest: it has no "
+            "share/anomaly/redist-manifest.json and share/anomaly/redist-fetch/. "
+            "Use a newer engine build."
+        )
+
+    spec = importlib.util.spec_from_file_location("anomaly_redist", module_path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module, module.load_manifest(manifest_path)
+
+
+def install_redistributables(engine_dir: Path, system32: Path, args) -> list:
+    """Obtain every declared redistributable; return the stems to override."""
+    module, manifest = load_redist_fetcher(engine_dir)
+    cache_dir = Path(args.redist_cache_dir).expanduser() if args.redist_cache_dir \
+        else DEFAULT_REDIST_CACHE
+    search_dirs = [Path(d).expanduser() for d in (args.redist_installer_dir or [])]
+    try:
+        return module.install(manifest, system32, cache_dir, search_dirs, log)
+    except module.RedistError as error:
+        raise SetupError(str(error)) from error
+
+
+def render_template(template: str, **tokens: str) -> str:
+    rendered = template
+    for key, value in tokens.items():
+        rendered = rendered.replace(f"@@{key}@@", shlex.quote(str(value)))
+    return rendered
+
+
+# ---------------------------------------------------------------------------
+# Main flow
+# ---------------------------------------------------------------------------
+
+def build_arg_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        description="Builds a macOS .app around the packaged Anomaly Wine engine.",
+    )
+    parser.add_argument("--json", action="store_true",
+                         help="Emit newline-delimited JSON progress events instead of plain text.")
+    parser.add_argument("--yes", action="store_true",
+                         help="Auto-confirm the final summary (equivalent to answering Y).")
+    parser.add_argument("--force-exe", action="store_true",
+                         help="Skip the game-exe existence check (equivalent to answering y).")
+    parser.add_argument("--skip-finder-alias", action="store_true",
+                         help="Deprecated no-op; wrappers no longer need a Configurator alias.")
+    parser.add_argument("--launcher-resources", help="Prebuilt launcher resource directory from anomaly-setup-tool (required).")
+    parser.add_argument("--archive", help="Path to the engine archive (.tar.xz).")
+    parser.add_argument("--app-name", help="Name for the .app bundle (without .app).")
+    parser.add_argument("--app-parent", help="Directory to place the .app in.")
+    parser.add_argument("--gamma-root", help="Path to game root (G: drive).")
+    parser.add_argument("--exe-rel-path", help="Path to the .exe, relative to game root.")
+    parser.add_argument("--redist-cache-dir",
+                         help=f"Where to cache the redistributable installers (default: {DEFAULT_REDIST_CACHE}).")
+    parser.add_argument("--redist-installer-dir", action="append", metavar="DIR",
+                         help="Directory holding already-downloaded redistributable installers. "
+                              "Wins over both the cache and the network; repeatable.")
+    return parser
+
+
+def symlink_force(link: Path, target) -> None:
+    # CrossOver's own `wineboot -u` pre-creates a real (non-symlink)
+    # drive_c/users/crossover directory as part of its default profile
+    # bootstrap — Path.unlink() can't remove a directory (raises
+    # PermissionError on macOS for a non-root process), so that case needs
+    # shutil.rmtree instead. Check is_symlink() first: a symlink pointing
+    # at a directory also satisfies is_dir(), and must be unlinked (not
+    # have its target deleted).
+    if link.is_symlink():
+        link.unlink()
+    elif link.is_dir():
+        shutil.rmtree(link)
+    elif link.exists():
+        link.unlink()
+    link.symlink_to(target)
+
+
+def validate_launcher_resources(directory: Path) -> dict:
+    for name in ("AnomalyLauncher", "SetupTool.icns", "Assets.car", "icon-info.plist"):
+        file = directory / name
+        if not file.is_file() or file.stat().st_size == 0:
+            raise SetupError(f"Launcher resource missing or empty: {file}. Rebuild anomaly-setup-tool.")
+    if not os.access(directory / "AnomalyLauncher", os.X_OK):
+        raise SetupError("Bundled AnomalyLauncher is not executable.")
+    try:
+        with (directory / "icon-info.plist").open("rb") as handle:
+            metadata = plistlib.load(handle)
+    except Exception as exc:
+        raise SetupError(f"Invalid launcher icon metadata: {exc}") from exc
+    if not isinstance(metadata, dict) or any(metadata.get(key) != "SetupTool" for key in ("CFBundleIconFile", "CFBundleIconName")):
+        raise SetupError("Launcher icon metadata must name SetupTool.")
+    return {key: metadata[key] for key in ("CFBundleIconFile", "CFBundleIconName")}
+
+
+def install_launcher_resources(directory: Path, app_path: Path) -> dict:
+    metadata = validate_launcher_resources(directory)
+    shutil.copy2(directory / "AnomalyLauncher", app_path / "Contents/MacOS/AnomalyLauncher")
+    for name in ("SetupTool.icns", "Assets.car"):
+        shutil.copy2(directory / name, app_path / "Contents/Resources" / name)
+    return metadata
+
+
+def run_setup(args: argparse.Namespace) -> None:
+    if not args.launcher_resources:
+        raise SetupError("--launcher-resources is required; use the prebuilt resources from anomaly-setup-tool.")
+    launcher_resources = Path(args.launcher_resources).expanduser()
+    validate_launcher_resources(launcher_resources)
+    log("==========================================================")
+    log("Anomaly Wine Engine — Interactive Setup")
+    log("==========================================================")
+
+    # 1. Collect paths
+    while True:
+        artifact_str = prompt("Path to engine archive (.tar.xz)", "", args.archive)
+        artifact_path = Path(artifact_str).expanduser()
+        if artifact_path.is_file():
+            break
+        if args.archive is not None:
+            raise SetupError(f"Not found: {artifact_path}")
+        log(f"  Not found: {artifact_path}")
+
+    app_name = prompt("Name for the .app bundle (without .app)", "Anomaly", args.app_name)
+    if app_name.endswith(".app"):
+        app_name = app_name[: -len(".app")]
+
+    app_parent = Path(prompt("Directory to place the .app in", str(Path.home() / "Applications"),
+                              args.app_parent)).expanduser()
+    app_path = app_parent / f"{app_name}.app"
+    if app_path.exists():
+        raise SetupError(
+            f"{app_path} already exists. This script never overwrites an existing wrapper "
+            f"(it would corrupt that app's Wine prefix). Choose a different name, or remove "
+            f"the existing .app and its ~/Library/Application Support/{app_name}/ first."
+        )
+
+    gamma_root = Path(prompt("Path to game root (G: drive)", str(Path.home() / "gamma"),
+                              args.gamma_root)).expanduser()
+
+    while True:
+        exe_rel_path = prompt("Path to .exe, relative to game root", "sept/bin/AnomalyDX11.exe",
+                               args.exe_rel_path).lstrip("/")
+        if (gamma_root / exe_rel_path).is_file():
+            break
+        log(f"  Not found: {gamma_root / exe_rel_path}")
+        if args.force_exe:
+            break
+        if args.exe_rel_path is not None:
+            raise SetupError(f"Not found: {gamma_root / exe_rel_path} (pass --force-exe to use it anyway)")
+        if not confirm_yes_no("  Use anyway?", default_yes=False):
+            continue
+        break
+    exe_win_path = "G:\\" + exe_rel_path.replace("/", "\\")
+    exe_rel_dir = str(Path(exe_rel_path).parent)
+    exe_run_dir = gamma_root / exe_rel_dir
+
+    retina_mode = "N"
+
+    # cxcompatdb checks this on every wine invocation from here on (wineboot,
+    # reg add/query, winecfg — not just the final generated game launcher,
+    # whose own export only takes effect after this exits). Set explicitly so
+    # an inherited non-dxmt value cannot make cxcompatdb refuse to start.
+    os.environ["ANOMALY_GRAPHICS_BACKEND"] = "dxmt"
+
+    app_support = Path.home() / "Library/Application Support" / app_name
+    wineprefix = app_support / "prefix"
+    engine_dir = app_path / "Contents/Resources/engine"
+    config_file = app_support / "app.env"
+    state_file = app_support / "configurator-state.json"
+
+    # Everything this script writes from here on lives under app_path or
+    # app_support (engine, prefix, launcher, native launcher). app_path
+    # is guaranteed fresh (its existence was checked above), so a failure can
+    # remove it wholesale. app_support is not: it survives deleting the .app,
+    # and an earlier wrapper of the same name may have left its prefix and
+    # app.env there. Only remove what this run created, never a pre-existing
+    # prefix or settings file.
+    _cleanup_paths.append(app_path)
+    if not app_support.exists():
+        _cleanup_paths.append(app_support)
+    elif not wineprefix.exists():
+        _cleanup_paths.append(wineprefix)
+
+    log("")
+    log(f"  Engine archive: {artifact_path}")
+    log(f"  App bundle:     {app_path}")
+    log(f"  Engine (in app):{engine_dir}")
+    log(f"  Prefix:         {wineprefix}")
+    log(f"  Settings:       {config_file}")
+    log(f"  Game root:      {gamma_root}")
+    log("")
+    if not args.yes:
+        if not confirm_yes_no("Proceed?", default_yes=True):
+            raise SetupError("Aborted.")
+
+    wine_env = {"WINEPREFIX": str(wineprefix)}
+
+    # 2. Create app skeleton, extract engine
+    stage_started("engine", "Step 1: Extracting Wine engine into app bundle...")
+    (app_path / "Contents/MacOS").mkdir(parents=True, exist_ok=True)
+    (app_path / "Contents/Resources").mkdir(parents=True, exist_ok=True)
+    engine_dir.mkdir(parents=True, exist_ok=True)
+    app_support.mkdir(parents=True, exist_ok=True)
+    icon_metadata = install_launcher_resources(launcher_resources, app_path)
+
+    extract_archive(artifact_path, engine_dir)
+
+    wine_bin = engine_dir / "bin/wine"
+    if not os.access(wine_bin, os.X_OK):
+        raise SetupError(f"wine binary missing after extraction at {wine_bin}")
+    run(x64(str(wine_bin), "--version"))
+
+    cxcompatdb = engine_dir / "lib/wine/x86_64-unix/cxcompatdb.so"
+    if not cxcompatdb.is_file():
+        raise SetupError("engine artifact has no cxcompatdb.so")
+
+    engine_version = "1.0.0"
+    version_file = engine_dir / "version"
+    if version_file.is_file():
+        first_line = version_file.read_text().splitlines()
+        if first_line and first_line[0].strip():
+            engine_version = first_line[0].strip()
+
+    if not (engine_dir / "lib/dxmt").is_dir():
+        raise SetupError("engine has no lib/dxmt")
+    stage_finished("engine")
+
+    # 3. Bootstrap prefix (outside the bundle)
+    stage_started("prefix", "Step 2: Bootstrapping Wine prefix...")
+    run(wineserver_cmd(engine_dir, "-k"), env=wine_env, check=False, quiet=True)
+    wineprefix.mkdir(parents=True, exist_ok=True)
+    run(wine_cmd(engine_dir, "wineboot", "-u"), env=wine_env)
+    run(wineserver_cmd(engine_dir, "-w"), env=wine_env)
+    stage_finished("prefix")
+
+    stage_started("driveMapping", "Step 2.2: Drive mappings & user profile...")
+    dosdevices = wineprefix / "dosdevices"
+    dosdevices.mkdir(parents=True, exist_ok=True)
+    symlink_force(dosdevices / "z:", "/")
+    symlink_force(dosdevices / "c:", "../drive_c")
+    symlink_force(dosdevices / "g:", gamma_root)
+
+    # wineboot -u (just above) already creates a REAL, fully-initialized
+    # Windows profile at drive_c/users/crossover — Desktop, Documents,
+    # AppData/Local/Temp, AppData/Local/ModOrganizer, all of it. The
+    # previous direction here (symlink crossover -> a freshly-mkdir'd,
+    # near-empty "Sikarugir") deleted that real profile and replaced apps
+    # running as "crossover" with a stub missing AppData/Local/Temp —
+    # which broke MO2's own atomic modlist.txt save ("could not create a
+    # temporary file"). Point the aliases AT the real profile instead of
+    # replacing it. Guard against a stale symlink left by that old
+    # behavior (a prefix from an earlier broken run): if crossover is
+    # already a symlink, drop it and let a real directory take its place.
+    real_profile = wineprefix / "drive_c/users/crossover"
+    if real_profile.is_symlink():
+        real_profile.unlink()
+    if not real_profile.exists():
+        real_profile.mkdir(parents=True, exist_ok=True)
+    symlink_force(wineprefix / "drive_c/users/Sikarugir", "crossover")
+    symlink_force(wineprefix / "drive_c/users" / os.environ.get("USER", "user"), "crossover")
+
+    # Runtime registry settings, queued here and applied in one regedit
+    # import with the redistributable overrides below. Part of the
+    # driveMapping stage so the stage sequence never goes backwards.
+    log("Step 2.3: Runtime settings...")
+
+    queue_reg(r"HKEY_CURRENT_USER\Software\Wine\Drivers", "Graphics", "REG_SZ", "mac")
+    queue_reg(r"HKEY_CURRENT_USER\Software\Wine\Mac Driver", "AllowSetGamma", "REG_DWORD", "0")
+    queue_reg(r"HKEY_CURRENT_USER\Software\Wine\Mac Driver", "RetinaMode", "REG_SZ", retina_mode)
+
+    # Renderer DLLs deliberately get no registry overrides here. cxcompatdb
+    # selects their backend directory before Wine resolves those modules.
+    queue_reg(r"HKEY_CURRENT_USER\Software\Wine\DllOverrides", "winemenubuilder.exe", "REG_SZ", "")
+
+    stage_finished("driveMapping")
+
+    stage_started("winetricks", "Step 2.4: Installing DirectX/VC++ redistributables...")
+    # 64-bit only: every file the engine's manifest declares is an
+    # x86_64-windows DLL, each confirmed required against xray-monolith.
+    sys64 = wineprefix / "drive_c/windows/system32"
+    for stem in install_redistributables(engine_dir, sys64, args):
+        queue_reg(r"HKEY_CURRENT_USER\Software\Wine\DllOverrides", f"*{stem}", "REG_SZ", "native,builtin")
+    # Not `winecfg.exe -v win10`: winecfg has no headless "set and
+    # exit" mode — it always opens its GUI window and blocks
+    # indefinitely waiting for someone to close it, hanging any
+    # automated/unattended run. This registry write is exactly what
+    # that flag does internally (winecfg's own Windows-Version setting
+    # is just HKEY_CURRENT_USER\Software\Wine\Version).
+    queue_reg(r"HKEY_CURRENT_USER\Software\Wine", "Version", "REG_SZ", "win10")
+    queue_reg(r"HKEY_CURRENT_USER\Software\Wine\Drivers", "Audio", "REG_SZ", "coreaudio")
+
+    flush_reg_queue(engine_dir, wineprefix)
+    run(wineserver_cmd(engine_dir, "-w"), env=wine_env)
+    stage_finished("winetricks")
+
+    # 4. Bundle metadata, settings file, launcher
+    stage_started("wrapper", "Step 3: Writing .app bundle metadata & launcher...")
+
+    bundle_id_suffix = app_name.lower().replace(" ", "-")
+    info_plist = {
+        "CFBundleDevelopmentRegion": "en",
+        "CFBundleDisplayName": app_name,
+        "CFBundleExecutable": "AnomalyLauncher",
+        "CFBundleIdentifier": f"com.elseform.anomaly.wine-engine.{bundle_id_suffix}",
+        "CFBundleInfoDictionaryVersion": "6.0",
+        "CFBundleName": app_name,
+        "CFBundlePackageType": "APPL",
+        "CFBundleShortVersionString": engine_version,
+        "CFBundleVersion": engine_version,
+        "LSMinimumSystemVersion": "26.0",
+        "NSHighResolutionCapable": True,
+        "NSSupportsAutomaticGraphicsSwitching": True,
+        "NSPrincipalClass": "NSApplication",
+        **icon_metadata,
+    }
+    with (app_path / "Contents/Info.plist").open("wb") as handle:
+        plistlib.dump(info_plist, handle)
+
+    # Settings live outside the bundle: editing them must not break the
+    # signature. The seed is the always-on DXMT vars plus the Anomaly defaults
+    # below; every other optional var stays
+    # absent (launcher's default = disabled). No inline comments:
+    # wrapper UI is the documented interface (sources/AnomalyLauncher/Schema.swift), and on first launch it
+    # seeds its own state from exactly this file, so what is written here *is*
+    # the default. Keep var names/quoting in sync with that schema by hand —
+    # there is no automated check. DXMT_CONFIG uses the packed
+    # "key=value;" form the launcher parses and re-serialises.
+    if config_file.is_file():
+        log(f"  Keeping existing settings: {config_file}")
+    else:
+        lines = [
+            "# Edit via the wrapper app — see it for descriptions and valid ranges.",
+            "",
+            f"export EXE_PATH={shlex.quote(exe_win_path)}",
+            f"export EXE_RUN_DIR={shlex.quote(str(exe_run_dir))}",
+            "",
+            "export ANOMALY_GRAPHICS_BACKEND=dxmt",
+            "export WINEMSYNC=1",
+            "export WINEESYNC=1",
+            "export ROSETTA_ADVERTISE_AVX=0",
+            f"export ANOMALY_RETINA_MODE={retina_mode}",
+            "export MTL_HUD_ENABLED=0",
+            'export WINEDEBUG="-all"',
+            'export DEFAULT_GAME_ARGS=""',
+            "",
+            "export DXMT_METALFX_SPATIAL_SWAPCHAIN=0",
+            "export DXMT_ENABLE_NVEXT=1",
+            "export DXMT_REORDER_BLITS=1",
+            'export DXMT_CONFIG="d3d11.displaySync=auto;d3d11.sampleNaNToZero=true;d3d11.releaseShaderIR=true;dxgi.forceSDR=true;"',
+        ]
+        config_file.write_text("\n".join(lines) + "\n")
+        log(f"  Wrote settings: {config_file}")
+
+    launcher_path = app_path / "Contents/MacOS/launcher"
+    launcher_path.write_text(render_template(
+        _LAUNCHER_TEMPLATE,
+        APP_SUPPORT=app_support,
+        EXE_WIN_PATH=exe_win_path, EXE_RUN_DIR=exe_run_dir,
+    ))
+
+    winetricks_path = app_path / "Contents/MacOS/winetricks"
+    winetricks_path.write_text(render_template(
+        _WINETRICKS_LAUNCHER_TEMPLATE, APP_SUPPORT=app_support, WINEPREFIX=wineprefix,
+    ))
+
+    winecfg_path = app_path / "Contents/MacOS/winecfg"
+    winecfg_path.write_text(render_template(
+        _WINECFG_LAUNCHER_TEMPLATE, APP_SUPPORT=app_support, WINEPREFIX=wineprefix,
+    ))
+
+    # Wrapper-owned locations remain outside its signed bundle.
+    configurator_paths = json.dumps({
+        "configFile": str(config_file),
+        "stateFile": str(state_file),
+        "winePrefix": str(wineprefix),
+    })
+    (app_path / "Contents/Resources/configurator-paths.json").write_text(configurator_paths)
+
+    for path in (launcher_path, winetricks_path, winecfg_path):
+        os.chmod(path, 0o755)
+    stage_finished("wrapper")
+
+    # 5. Ad-hoc sign the bundle. The engine payload (and the
+    #    legacy components inside it) is already signed by
+    #    pack-engine-artifact.sh; this re-signs the wrapper scripts plus the
+    #    whole bundle envelope so the paths.json we just dropped in doesn't
+    #    invalidate anything upstream.
+    stage_started("finalize", "Step 4: Signing bundle...")
+
+    def codesign_soft(target: Path) -> bool:
+        returncode, _ = run(["codesign", "--force", "--sign", "-", "--timestamp=none", str(target)],
+                             check=False, quiet=True)
+        return returncode == 0
+
+    codesign_soft(launcher_path)
+    codesign_soft(winetricks_path)
+    codesign_soft(winecfg_path)
+    codesign_soft(app_path / "Contents/MacOS/AnomalyLauncher")
+    if codesign_soft(app_path):
+        log(f"  Ad-hoc signed {app_path}")
+    else:
+        err("  Warning: could not sign the bundle (it will still run locally)")
+
+    log("Step 5: Registering with Launch Services...")
+    run(
+        ["/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister",
+         "-f", str(app_path)],
+        check=False, quiet=True,
+    )
+
+    artifact_event(app_path)
+
+    log("")
+    log("==========================================================")
+    log("Setup complete.")
+    log(f"  App:      {app_path}")
+    log(f"  Engine:   {engine_dir}  (inside app, read-only)")
+    log(f"  Prefix:   {wineprefix}")
+    log(f"  Settings: {config_file}")
+    log("")
+    log(f'Launch via:  open "{app_path}"')
+    log(f'Or CLI:      "{app_path}/Contents/MacOS/launcher" -dbg -nointro')
+    log(f'Winetricks:  "{app_path}/Contents/MacOS/winetricks" [verb ...]')
+    log(f'WineCfg:     "{app_path}/Contents/MacOS/winecfg"')
+    log("Open the app to change settings, choose an executable, or press Launch.")
+    log("==========================================================")
+    stage_finished("finalize")
+
+
+def _cleanup_partial_wrapper() -> None:
+    for path in _cleanup_paths:
+        if path.exists():
+            try:
+                shutil.rmtree(path)
+                log(f"Removed partial output: {path}")
+            except OSError as exc:
+                err(f"warning: failed to remove {path}: {exc}")
+
+
+def main() -> None:
+    global JSON_MODE
+    parser = build_arg_parser()
+    args = parser.parse_args()
+    JSON_MODE = args.json
+    try:
+        run_setup(args)
+    except SetupError as exc:
+        if _CURRENT_STAGE:
+            stage_failed(_CURRENT_STAGE, str(exc))
+        completed(False, str(exc))
+        err(f"error: {exc}")
+        _cleanup_partial_wrapper()
+        sys.exit(1)
+    except KeyboardInterrupt:
+        completed(False, "Interrupted")
+        _cleanup_partial_wrapper()
+        sys.exit(130)
+    except Exception as exc:  # noqa: BLE001 - any failure must still clean up and report
+        # An unexpected error (OSError from a copy, a corrupt archive, ...)
+        # must leave no partial wrapper behind and still end the event stream
+        # with a completed event, or the caller only sees a bare exit status.
+        message = f"unexpected error: {type(exc).__name__}: {exc}"
+        if _CURRENT_STAGE:
+            stage_failed(_CURRENT_STAGE, message)
+        completed(False, message)
+        err(traceback.format_exc())
+        _cleanup_partial_wrapper()
+        sys.exit(1)
+    else:
+        completed(True, "Setup complete.")
+
+
+if __name__ == "__main__":
+    main()
