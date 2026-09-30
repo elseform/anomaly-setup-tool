@@ -23,8 +23,7 @@ extension AppModel {
             ? mo2URL.deletingLastPathComponent().deletingLastPathComponent().standardizedFileURL.path
             : ""
         return WineEngineSetupRequest(
-            archivePath: wineEngineArchivePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                ? nil : wineEngineArchivePath,
+            archivePath: localEngineArchivePath,
             appName: appName,
             appParent: installDirectory,
             driveRoot: driveRoot,

@@ -7,10 +7,7 @@ import AnomalySetupCore
 struct SetupPage: View {
     @Bindable var model: AppModel
 
-    /// The one open disclosure. Only one opens at a time so the page always
-    /// fits the fixed window.
-    private enum Panel { case localEngine, redistInstallers, advanced }
-    @State private var openPanel: Panel?
+    @State private var advancedIsOpen = false
     @State private var redistInstallerStatuses: [RedistInstallers.Status] = []
 
     // MARK: - Body
@@ -29,43 +26,27 @@ struct SetupPage: View {
         .pageForm()
     }
 
-    private func isOpen(_ panel: Panel) -> Binding<Bool> {
-        Binding(get: { openPanel == panel }, set: { openPanel = $0 ? panel : nil })
-    }
-
     // MARK: - Engine archive
 
-    // Left empty (the default), the
-    // newest published anomaly-wine-engine release is resolved and downloaded
-    // automatically; a path here is a local archive, used as is.
+    // Left on the default, the newest published anomaly-wine-engine release
+    // is resolved and downloaded automatically; the local choice takes an
+    // archive path, used as is.
     private var engineArchiveControls: some View {
         Section {
-            Text(model.wineEngineArchivePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                 ? "Downloads the latest release from GitHub."
-                 : "Uses your local engine archive as it is.")
-                .foregroundStyle(.secondary)
-            DisclosureGroup("Use a local engine archive instead", isExpanded: isOpen(.localEngine)) {
-                DisclosureBody {
-                    HStack(spacing: 8) {
-                        TextField("Engine archive", text: $model.wineEngineArchivePath, prompt: Text("Automatic download"))
-                            .accessibilityLabel("Engine archive")
-                        Button("Choose…") {
-                            model.chooseWineEngineArchive()
-                        }
-                        .accessibilityLabel("Choose engine archive")
-                    }
-                    SectionNote("Choose a .tar.xz engine archive.")
-                    if !model.wineEngineArchivePath.isEmpty {
-                        Button("Use automatic download") {
-                            model.wineEngineArchivePath = ""
-                        }
-                        .buttonStyle(.link)
-                    }
-                }
+            Picker("Engine source", selection: $model.usesLocalEngine) {
+                Text("Download the latest release from GitHub").tag(false)
+                Text("Provide engine locally").tag(true)
             }
-            .onAppear {
-                if !model.wineEngineArchivePath.isEmpty {
-                    openPanel = .localEngine
+            .pickerStyle(.radioGroup)
+            .labelsHidden()
+            if model.usesLocalEngine {
+                HStack(spacing: 8) {
+                    TextField("Engine archive", text: $model.wineEngineArchivePath, prompt: Text("Path to a .tar.xz engine archive"))
+                        .accessibilityLabel("Engine archive")
+                    Button("Choose…") {
+                        model.chooseWineEngineArchive()
+                    }
+                    .accessibilityLabel("Choose engine archive")
                 }
             }
         } header: {
@@ -79,41 +60,34 @@ struct SetupPage: View {
     // which ones it needs and fetches them from Microsoft's own pinned
     // installers during setup. Nothing here has to be filled in; the picker
     // only lets someone who already has the installers point at them so the
-    // run stays offline. Collapsed by default, since the default path needs
-    // no decision.
+    // run stays offline.
     private var redistInstallerControls: some View {
         Section {
-            DisclosureGroup(isExpanded: isOpen(.redistInstallers)) {
-                DisclosureBody {
-                    ForEach(redistInstallerStatuses, id: \.installer.filename) { status in
-                        Label {
-                            LabeledContent(status.installer.title) {
-                                Text(status.isPresent
-                                     ? "Found locally; verified during setup"
-                                     : "Will be downloaded (\(status.installer.sizeLabel))")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                            }
-                        } icon: {
-                            Image(systemName: status.isPresent ? "checkmark.circle.fill" : "arrow.down.circle")
-                                .foregroundStyle(status.isPresent ? SetupStatusTone.success.color : .secondary)
-                        }
-                        .accessibilityElement(children: .combine)
+            ForEach(redistInstallerStatuses, id: \.installer.filename) { status in
+                Label {
+                    LabeledContent(status.installer.title) {
+                        Text(status.isPresent
+                             ? "Found locally; verified during setup"
+                             : "Will be downloaded (\(status.installer.sizeLabel))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
-                    HStack(spacing: 8) {
-                        TextField("Optional folder with downloaded installers",
-                                  text: $model.redistInstallerDirectory)
-                            .accessibilityLabel("Downloaded installers folder")
-                        Button("Choose…") {
-                            model.chooseRedistInstallerDirectory()
-                        }
-                        .accessibilityLabel("Choose downloaded installers folder")
-                    }
-                    SectionNote("Setup verifies every file against the engine’s required checksum. Missing files are downloaded automatically.")
+                } icon: {
+                    Image(systemName: status.isPresent ? "checkmark.circle.fill" : "arrow.down.circle")
+                        .foregroundStyle(status.isPresent ? SetupStatusTone.success.color : .secondary)
                 }
-            } label: {
-                Text("Downloaded automatically")
+                .accessibilityElement(children: .combine)
             }
+            HStack(spacing: 8) {
+                TextField("Optional folder with downloaded installers",
+                          text: $model.redistInstallerDirectory)
+                    .accessibilityLabel("Downloaded installers folder")
+                Button("Choose…") {
+                    model.chooseRedistInstallerDirectory()
+                }
+                .accessibilityLabel("Choose downloaded installers folder")
+            }
+            SectionNote("Setup verifies every file against the engine’s required checksum. Missing files are downloaded automatically.")
         } header: {
             Text("Dependencies")
         }
@@ -128,7 +102,7 @@ struct SetupPage: View {
 
     private var advancedControls: some View {
         Section {
-            DisclosureGroup("Show advanced options", isExpanded: isOpen(.advanced)) {
+            DisclosureGroup("Show advanced options", isExpanded: $advancedIsOpen) {
                 DisclosureBody {
                     driveMappingControls
                     Toggle(SetupOptionCopy.saveDetailedLog, isOn: $model.saveVerboseLog)

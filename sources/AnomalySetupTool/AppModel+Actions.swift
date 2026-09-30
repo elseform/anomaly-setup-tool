@@ -21,6 +21,7 @@ extension AppModel {
         }
         if wineEngineArchivePath.isEmpty, let detected = Self.devArchiveFromEnvironment() {
             wineEngineArchivePath = detected
+            usesLocalEngine = true
         }
     }
 

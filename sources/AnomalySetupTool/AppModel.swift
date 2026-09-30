@@ -33,6 +33,9 @@ final class AppModel {
     @ObservationIgnored var pendingLogText = ""
     @ObservationIgnored var logFlushScheduled = false
 
+    /// Whether setup uses `wineEngineArchivePath` instead of downloading the
+    /// newest published engine release.
+    var usesLocalEngine = false
     var wineEngineArchivePath = ""
     /// Optional directory of already-downloaded Microsoft installers; empty
     /// means the setup run uses its cache, then the network.

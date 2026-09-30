@@ -65,12 +65,17 @@ extension AppModel {
         return ""
     }
 
-    /// An empty wineEngineArchivePath is valid on its own: the engine then
-    /// resolves and downloads the newest published anomaly-wine-engine release
-    /// (see WineEngineSetup.resolveArchive). A non-empty path is a local
-    /// archive, used as is.
+    /// The local engine archive setup will use, or nil to download the newest
+    /// published anomaly-wine-engine release (see WineEngineSetup.resolveArchive).
+    /// A local archive is used as is.
+    var localEngineArchivePath: String? {
+        guard usesLocalEngine else { return nil }
+        let path = wineEngineArchivePath.trimmingCharacters(in: .whitespacesAndNewlines)
+        return path.isEmpty ? nil : path
+    }
+
     var setupReady: Bool {
-        selectedLaunchExecutableFound && wrapperNameIsValid
+        selectedLaunchExecutableFound && wrapperNameIsValid && (!usesLocalEngine || localEngineArchivePath != nil)
     }
 
     var selectedLaunchExecutablePath: String {
