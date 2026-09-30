@@ -11,21 +11,26 @@ struct SetupConfiguration {
     var manualModOrganizerPath = ""
 
     var outputAppPath: String {
-        let cleanName = appName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let baseName = cleanName.hasSuffix(".app") ? String(cleanName.dropLast(4)) : cleanName
-        let name = "\(baseName).app"
-        return URL(fileURLWithPath: installDirectory).appendingPathComponent(name).path
+        URL(fileURLWithPath: installDirectory)
+            .appendingPathComponent("\(Self.bundleName(forAppName: appName)).app").path
     }
 
     var wrapperNameIsValid: Bool {
         Self.isValidWrapperName(appName)
     }
 
-    static func isValidWrapperName(_ name: String) -> Bool {
+    /// The name the .app is saved under: trimmed, without a ".app" suffix.
+    /// The engine receives this form so it creates the path shown to the user.
+    static func bundleName(forAppName name: String) -> String {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return false }
-        guard trimmed != "." && trimmed != ".." else { return false }
-        return trimmed.rangeOfCharacter(from: CharacterSet(charactersIn: "/:")) == nil
+        return trimmed.hasSuffix(".app") ? String(trimmed.dropLast(4)) : trimmed
+    }
+
+    static func isValidWrapperName(_ name: String) -> Bool {
+        let bundleName = bundleName(forAppName: name)
+        guard !bundleName.isEmpty else { return false }
+        guard bundleName != "." && bundleName != ".." else { return false }
+        return bundleName.rangeOfCharacter(from: CharacterSet(charactersIn: "/:")) == nil
     }
 
     /// The wrapper name suggested for a launch executable: "Anomaly" for

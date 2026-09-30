@@ -13,6 +13,12 @@ final class SetupConfigurationTests {
         XCTAssertEqual(config.outputAppPath, "/tmp/Anomaly/stalker-anomaly.app")
     }
 
+    func testBundleNameIsTrimmedAndWithoutAppSuffix() {
+        XCTAssertEqual(SetupConfiguration.bundleName(forAppName: "  Anomaly.app "), "Anomaly")
+        XCTAssertEqual(SetupConfiguration.bundleName(forAppName: " Anomaly "), "Anomaly")
+        XCTAssertFalse(SetupConfiguration.isValidWrapperName(" .app "))
+    }
+
     func testDefaultOutputAppPathUsesApplicationsFolder() {
         let expected = URL(fileURLWithPath: SetupConfiguration.defaultInstallDirectory)
             .appendingPathComponent("stalker-anomaly.app")
