@@ -81,6 +81,14 @@ struct LauncherTests {
         check(commentedOut.customExecutables.isEmpty && commentedOut.modOrganizerPath.isEmpty, "commented-out executable lines are not read")
         commentedOut.persist()
         check(try String(contentsOf: config, encoding: .utf8).contains("\n#export ANOMALY_CUSTOM_EXE_1_PATH='G:\\a.exe'\n"), "commented-out executable lines stay comments when saved")
+        try "export DXMT_LOG_PATH=\"$HOME/logs\"\nexport DXMT_SHADER_CACHE_PATH='$HOME/literal'\nexport WINEDEBUG=\"\\$x\"\n".write(to: config, atomically: true, encoding: .utf8)
+        let expanding = loadState(configFile: config.path)
+        check(expanding.foreignLines.contains("export DXMT_LOG_PATH=\"$HOME/logs\""), "a line the shell expands is kept verbatim")
+        check(expanding.vars["DXMT_SHADER_CACHE_PATH"]?.value == "$HOME/literal" && expanding.vars["WINEDEBUG"]?.value == "$x", "single-quoted and escaped dollar signs stay literal values")
+        ConfiguratorModel(install: InstallLayout(wrapperURL: wrapper)).persist()
+        check(try String(contentsOf: config, encoding: .utf8).contains("export DXMT_LOG_PATH=\"$HOME/logs\"\n"), "the expanding line survives a save")
+        check(!expandsInShell("'$HOME'") && !expandsInShell("\\$HOME") && expandsInShell("\"$HOME\"") && expandsInShell("`id`") && expandsInShell("$(id)"), "shell expansion detection")
+        try "".write(to: config, atomically: true, encoding: .utf8)
         try "export ANOMALY_CUSTOM_EXE_PATH='G:\\tools\\Tool.exe'\nexport ANOMALY_CUSTOM_EXE_RUN_DIR='/tmp/tools'\nexport ANOMALY_MO2_EXE_PATH=''\nexport DEFAULT_GAME_ARGS='-old'\n".write(to: config, atomically: true, encoding: .utf8)
         check(ConfiguratorModel(install: InstallLayout(wrapperURL: wrapper)).customExecutables.map(\.arguments) == ["-old"], "single custom path inherits the old arguments")
         try "export DXMT_CONFIG=\"d3d11.sampleNaNToZero=true;\"\n".write(to: config, atomically: true, encoding: .utf8)
@@ -154,7 +162,7 @@ struct LauncherTests {
         let customEntry = model.customEntries[0]
         var starts = 0
         var spawned: [[String]] = []
-        var finish: (@Sendable () -> Void)?
+        var finish: (@Sendable (Int32) -> Void)?
         let launcher = LaunchController(spawn: { _, _, arguments, onExit in
             let saved = loadState(configFile: config.path)
             check(saved.vars["DEFAULT_GAME_ARGS"]?.value == "-pending", "flush before launch, arguments of the started executable")
@@ -168,9 +176,15 @@ struct LauncherTests {
         launcher.launch(customEntry, model: model)
         check(starts == 1 && spawned == [[]], "single launch without arguments")
         check(launcher.isRunning && launcher.running?.kind == .custom, "locked while the program runs")
-        finish?()
+        finish?(0)
         for _ in 0..<100 where launcher.isRunning { RunLoop.main.run(until: Date().addingTimeInterval(0.02)) }
         check(!launcher.isRunning && launcher.running == nil, "unlocks when the program exits")
+        let early = LaunchController(spawn: { _, _, _, onExit in finish = onExit })
+        early.launch(customEntry, model: model)
+        finish?(1)
+        for _ in 0..<100 where early.isRunning { RunLoop.main.run(until: Date().addingTimeInterval(0.02)) }
+        check(!early.isRunning && early.error?.contains("stopped right after starting (exit status 1)") == true, "a helper that fails at once is reported: \(early.error ?? "no error")")
+        check(launcher.error == nil, "a clean exit reports nothing")
         let shortcut = LaunchController(spawn: { _, _, arguments, _ in
             let saved = loadState(configFile: config.path)
             check(unquote(saved.passthrough["EXE_PATH"] ?? "") == external.windowsPath, "shortcut launch activates the MO2 path")
@@ -197,7 +211,7 @@ struct LauncherTests {
         let child = root.appendingPathComponent("child-helper")
         try "#!/bin/sh\nsleep 0.2\nprintf survived > \(shellQuote(witness.path))\n".write(to: child, atomically: true, encoding: .utf8)
         try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: child.path)
-        try LaunchController.startProcess(helper: child, log: root.appendingPathComponent("child.log"), onExit: {})
+        try LaunchController.startProcess(helper: child, log: root.appendingPathComponent("child.log"), onExit: { _ in })
         let deadline = Date().addingTimeInterval(3)
         while !fm.fileExists(atPath: witness.path) && Date() < deadline {
             Thread.sleep(forTimeInterval: 0.02)
