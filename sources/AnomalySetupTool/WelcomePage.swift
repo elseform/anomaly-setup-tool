@@ -15,6 +15,7 @@ struct WelcomePage: View {
 
     var body: some View {
         Form {
+            SetupSummarySection(model: model)
             Section {
                 if model.selectedLaunchExecutableFound {
                     pickedLocation
@@ -25,7 +26,6 @@ struct WelcomePage: View {
             if model.selectedLaunchExecutableFound {
                 appNameSection
             }
-            SetupSummarySection(model: model)
         }
         .pageForm()
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: model.selectedLaunchExecutableFound)
@@ -42,7 +42,7 @@ struct WelcomePage: View {
                 .buttonStyle(.borderedProminent)
                 .help("Pick ModOrganizer.exe, or another Windows program to launch instead")
         } label: {
-            Text("Select ModOrganizer’s executable file")
+            Text("Select ModOrganizer.exe to continue")
         }
     }
 

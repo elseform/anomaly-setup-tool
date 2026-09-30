@@ -13,15 +13,15 @@ struct SetupSummarySection: View {
                     .foregroundStyle(.tint)
             }
             Label {
-                Text(model.wineEngineArchivePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                     ? "Download the latest wine engine"
-                     : "Use the local wine engine archive")
+                Text(model.usesLocalEngine
+                     ? "Use the local wine engine archive"
+                     : "Download the latest wine engine")
             } icon: {
                 Image(systemName: "arrow.down.circle")
                     .foregroundStyle(.tint)
             }
             Label {
-                Text("Set up the wrapper for \(model.selectedLaunchExecutableLabel)")
+                Text("Set up the wrapper for your Anomaly installation")
             } icon: {
                 Image(systemName: "play.circle")
                     .foregroundStyle(.tint)
