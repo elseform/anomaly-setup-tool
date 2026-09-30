@@ -34,7 +34,7 @@ extension AppModel {
             forceExe: false,
             updateUSVFS: true,
             usvfsSource: SetupDefaults.defaultUSVFSSource,
-            redistInstallerDirectory: redistInstallerDirectory,
+            redistInstallerDirectory: usesLocalInstallers ? redistInstallerDirectory : "",
             logFile: saveVerboseLog ? Self.newSetupLogPath(appName: appName) : nil
         )
     }

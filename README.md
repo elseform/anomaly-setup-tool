@@ -17,9 +17,9 @@ This README describes the current source. Published builds are available on the 
 
 Extract the downloaded setup-tool archive and open `Anomaly Setup Tool.app`, or [build the current source](#build-and-test). Builds made by `build.sh` are ad-hoc signed, not notarized.
 
-1. On the first page, click **Choose…** and select `ModOrganizer.exe` from your existing installation. You can select another `.exe` as the launch target instead. The page then says whether setup will update ModOrganizer's `usvfs` files.
+1. On the first page, click **Choose…** and select `ModOrganizer.exe` from your existing installation. You can select another `.exe` as the launch target instead. The page lists what setup will do; the creation page says whether setup updates ModOrganizer's `usvfs` files.
 2. The app name is filled in from the selected executable (`ModOrganizer` for `ModOrganizer.exe`), with `-2`, `-3`, and so on added if an app of that name already exists in `~/Applications`. Change it if you like, then click **Continue**.
-3. On **Options**, the engine is downloaded automatically; expand **Use a local engine file** to choose a local `.tar.xz` archive instead. Optionally expand **Windows components** to see which Microsoft runtime files are already present or choose a folder containing downloaded copies. **Advanced** holds the drive mappings and **Save a setup log**; leave the log enabled for troubleshooting.
+3. On **Options**, the engine is downloaded automatically; choose **Provide engine locally** to pick a local `.tar.xz` archive instead. **Dependencies** lists the Microsoft runtime files and whether each is already present; choose **Provide installers locally** to point at a folder containing downloaded copies. **Advanced options** holds the drive mappings and **Save a setup log**; leave the log enabled for troubleshooting.
 4. Click **Create wrapper**.
 5. Open the created app from Finder. It opens on a grid of launch tiles: **ModOrganizer**, **Anomaly - DX11** and **Anomaly - DX11 (AVX)** (Mod Organizer shortcuts) while a ModOrganizer.exe path is set, and a tile for the custom executable while that path is set. Click a tile to launch it; the window quits after handing off to the launch process. Adjust settings, or set either path, from the sidebar first.
 
@@ -27,7 +27,7 @@ Setup checks the selected executable exists; it does not validate the contents o
 
 ## Engine Selection and Downloads
 
-With **Engine archive** empty, setup always uses the newest `engine-*` release from `elseform/anomaly-wine-engine`, ordered by engine version. It downloads the archive and verifies its SHA-256 against the release manifest. Cached archives are checked by checksum before reuse.
+With **Download the latest release from GitHub** selected, setup always uses the newest `engine-*` release from `elseform/anomaly-wine-engine`, ordered by engine version. It downloads the archive and verifies its SHA-256 against the release manifest. Cached archives are checked by checksum before reuse.
 
 A local archive is used exactly as selected, with no version check. Automatic selection needs access to the release listing and manifest even when the archive is cached; offline, select a local archive.
 
