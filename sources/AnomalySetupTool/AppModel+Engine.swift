@@ -22,9 +22,10 @@ extension AppModel {
         let driveRoot = selectedLaunchExecutableFound
             ? mo2URL.deletingLastPathComponent().deletingLastPathComponent().standardizedFileURL.path
             : ""
+        let bundleName = SetupConfiguration.bundleName(forAppName: appName)
         return WineEngineSetupRequest(
             archivePath: localEngineArchivePath,
-            appName: appName,
+            appName: bundleName,
             appParent: installDirectory,
             driveRoot: driveRoot,
             mo2Path: selectedLaunchExecutablePath,
@@ -35,7 +36,7 @@ extension AppModel {
             updateUSVFS: true,
             usvfsSource: SetupDefaults.defaultUSVFSSource,
             redistInstallerDirectory: usesLocalInstallers ? redistInstallerDirectory : "",
-            logFile: saveVerboseLog ? Self.newSetupLogPath(appName: appName) : nil
+            logFile: saveVerboseLog ? Self.newSetupLogPath(appName: bundleName) : nil
         )
     }
 
