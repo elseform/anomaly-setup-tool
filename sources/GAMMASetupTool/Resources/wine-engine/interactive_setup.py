@@ -588,7 +588,7 @@ def symlink_force(link: Path, target) -> None:
 
 
 def validate_launcher_resources(directory: Path) -> dict:
-    for name in ("GAMMALauncher", "Gamma.icns", "Assets.car", "icon-info.plist"):
+    for name in ("GAMMALauncher", "SetupTool.icns", "Assets.car", "icon-info.plist"):
         file = directory / name
         if not file.is_file() or file.stat().st_size == 0:
             raise SetupError(f"Launcher resource missing or empty: {file}. Rebuild gamma-setup-tool.")
@@ -599,15 +599,15 @@ def validate_launcher_resources(directory: Path) -> dict:
             metadata = plistlib.load(handle)
     except Exception as exc:
         raise SetupError(f"Invalid launcher icon metadata: {exc}") from exc
-    if not isinstance(metadata, dict) or any(metadata.get(key) != "Gamma" for key in ("CFBundleIconFile", "CFBundleIconName")):
-        raise SetupError("Launcher icon metadata must name Gamma.")
+    if not isinstance(metadata, dict) or any(metadata.get(key) != "SetupTool" for key in ("CFBundleIconFile", "CFBundleIconName")):
+        raise SetupError("Launcher icon metadata must name SetupTool.")
     return {key: metadata[key] for key in ("CFBundleIconFile", "CFBundleIconName")}
 
 
 def install_launcher_resources(directory: Path, app_path: Path) -> dict:
     metadata = validate_launcher_resources(directory)
     shutil.copy2(directory / "GAMMALauncher", app_path / "Contents/MacOS/GAMMALauncher")
-    for name in ("Gamma.icns", "Assets.car"):
+    for name in ("SetupTool.icns", "Assets.car"):
         shutil.copy2(directory / name, app_path / "Contents/Resources" / name)
     return metadata
 

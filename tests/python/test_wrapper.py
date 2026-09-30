@@ -67,12 +67,12 @@ class WrapperTests(unittest.TestCase):
     def check_assembly(self, app):
         info = plistlib.loads((app / "Contents/Info.plist").read_bytes())
         self.assertEqual(info["CFBundleExecutable"], "GAMMALauncher")
-        self.assertEqual(info["CFBundleIconName"], "Gamma")
-        self.assertEqual(info["CFBundleIconFile"], "Gamma")
+        self.assertEqual(info["CFBundleIconName"], "SetupTool")
+        self.assertEqual(info["CFBundleIconFile"], "SetupTool")
         self.assertEqual(info["LSMinimumSystemVersion"], "26.0")
         self.assertFalse((app / "Contents/Resources/Configurator.app").exists())
         self.assertEqual(len(list(app.parent.iterdir())), 1)
-        for name in ("Gamma.icns", "Assets.car"):
+        for name in ("SetupTool.icns", "Assets.car"):
             self.assertEqual((app / "Contents/Resources" / name).read_bytes(), (RESOURCES / name).read_bytes())
         for name in ("launcher", "winecfg", "winetricks"):
             subprocess.run(["/bin/bash", "-n", str(app / "Contents/MacOS" / name)], check=True)

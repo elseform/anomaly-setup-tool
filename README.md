@@ -63,7 +63,7 @@ Setup seeds defaults with no launch arguments. The wrapper saves settings automa
 
 Launch output goes to `~/Library/Logs/<app name>/launcher.log`. The native UI quits after creating the launcher process; later Wine or game failures are recorded in that log. The CLI helper at `Contents/MacOS/launcher` remains available, including explicit argument forwarding.
 
-New wrappers use the authored `Gamma.icon` artwork. Both modern appearance assets and an `.icns` fallback are packaged. Existing installed wrappers are not modified.
+New wrappers use the setup tool's own `SetupTool.icon` artwork. Both modern appearance assets and an `.icns` fallback are packaged. The green `Gamma.icon` artwork stays in `sources/GAMMALauncher/Resources/` but is not used. Existing installed wrappers are not modified.
 
 With **Save setup log** enabled, setup events are written to:
 
@@ -82,7 +82,7 @@ For failed setup, use the detailed log and the GAMMA Discord link in the app.
 
 ## Build and Test
 
-Building requires full Xcode with Icon Composer-capable `actool`, selected through `xcode-select`; Command Line Tools alone cannot compile the app's `SetupTool.icon` or the wrapper's `Gamma.icon`. From the repository root:
+Building requires full Xcode with Icon Composer-capable `actool`, selected through `xcode-select`; Command Line Tools alone cannot compile `SetupTool.icon`, which is both the app's icon and the wrapper's. From the repository root:
 
 ```sh
 ./build.sh
@@ -103,7 +103,7 @@ Developers can set `GAMMA_ENGINE_ARTIFACTS_DIR` in the app's environment to pref
 | Path | Responsibility |
 | --- | --- |
 | `sources/GAMMASetupTool/` | SwiftUI wizard, setup state, request construction, progress display, and the app's `SetupTool.icon`. |
-| `sources/GAMMALauncher/` | Native wrapper settings, target picker, launch handoff, and authored Gamma icon. |
+| `sources/GAMMALauncher/` | Native wrapper settings, target picker, launch tiles, and the unused green `Gamma.icon`. |
 | `sources/GAMMASetupCore/` | Shared models, engine release resolution, checksum verification, wrapper pipeline, and USVFS updates. |
 | `sources/GAMMASetupEngine/` | `gamma-setup-engine` CLI backend, called by the GUI through `create-wine-engine`. |
 | `sources/GAMMASetupTool/Resources/wine-engine/interactive_setup.py` | Canonical wrapper-creation script, bundled by `build.sh`. |
@@ -114,7 +114,7 @@ Developers can set `GAMMA_ENGINE_ARTIFACTS_DIR` in the app's environment to pref
 ### Launcher resources and engine compatibility
 
 `build.sh bundle` creates `dist/GAMMA Setup Tool.app/Contents/Resources/launcher/`
-with `GAMMALauncher`, `Gamma.icns`, `Assets.car`, and `icon-info.plist`.
+with `GAMMALauncher`, `SetupTool.icns`, `Assets.car`, and `icon-info.plist`.
 The setup backend passes this directory to `interactive_setup.py` through
 `--launcher-resources`; direct script callers must supply it too. Missing or
 invalid resources fail before wrapper or prefix changes. Run the bundle build
