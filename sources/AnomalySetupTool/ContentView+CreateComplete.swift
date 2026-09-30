@@ -29,7 +29,7 @@ struct CreatePage: View {
             }
 
             Section {
-                DisclosureGroup("Show technical details", isExpanded: $model.showOutput) {
+                DisclosureGroup("Show log output", isExpanded: $model.showOutput) {
                     ScrollView {
                         Text(model.logText.isEmpty ? "No setup output is available yet." : model.logText)
                             .font(.system(.caption, design: .monospaced))
@@ -61,8 +61,8 @@ struct CreatePage: View {
                 .foregroundStyle(SetupStatusTone.error.color)
             if model.savedLogPath.isEmpty {
                 Text(model.saveVerboseLog
-                     ? "The setup log location is unavailable. Copy the technical details below instead."
-                     : "Saving the setup log was turned off. Copy the technical details below instead.")
+                     ? "The setup log location is unavailable. Copy the log output below instead."
+                     : "Saving the setup log was turned off. Copy the log output below instead.")
                     .foregroundStyle(.secondary)
             } else {
                 LabeledContent("Log:") {

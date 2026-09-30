@@ -6,7 +6,6 @@ dist/
 *.profraw
 .DS_Store
 .claude
-ANNOUNCEMENT_0.86.md
 AGENTS.md
 .python-version
 *.orphan
