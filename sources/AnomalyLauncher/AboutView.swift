@@ -15,6 +15,12 @@ struct AboutView: View {
 
     var body: some View {
         Form {
+            if let error = model.loadError ?? model.saveError {
+                Section {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .foregroundStyle(StatusTone.error.color)
+                }
+            }
             Section("Launcher") {
                 row("Version", BuildInfo.version)
             }
