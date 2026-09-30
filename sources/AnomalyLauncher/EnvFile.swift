@@ -153,7 +153,7 @@ func parseEnvLines(path: String) -> ParsedEnv {
         }
         if retiredKeyPrefixes.contains(where: parsed.key.hasPrefix) {
             continue
-        } else if passthroughKeys.contains(parsed.key) {
+        } else if isPassthroughKey(parsed.key) {
             result.passthrough[parsed.key] = parsed.value
         } else if schemaByKey[parsed.key] != nil || parsed.key == "DXMT_CONFIG" {
             result.vars[parsed.key] = (parsed.enabled, parsed.value)
@@ -223,7 +223,10 @@ func loadState(configFile: String, legacyStateFile: String? = nil) -> Configurat
 func generateEnv(_ state: ConfiguratorState) -> String {
     var lines: [String] = [pointerComment, ""]
 
-    for key in passthroughKeys {
+    // Fixed keys first, then the custom executable lines in list order.
+    let customKeys = state.passthrough.keys.filter { !passthroughKeys.contains($0) }
+        .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    for key in passthroughKeys + customKeys {
         if let value = state.passthrough[key] {
             lines.append("export \(key)=\(value)")
         }

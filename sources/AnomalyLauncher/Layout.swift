@@ -8,5 +8,5 @@ enum Layout {
     static let sidebarWidth: CGFloat = 230
     static let fieldWidth: CGFloat = 240
     static let tileWidth: CGFloat = 120
-    static let tileIconSize: CGFloat = 76
+    static let tileIconSize: CGFloat = 88
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 /// The first sidebar page: one tile per thing the wrapper can start.
 struct LaunchGridView: View {
@@ -9,30 +10,40 @@ struct LaunchGridView: View {
     private var isLocked: Bool { !model.canEdit || launcher.isRunning }
 
     var body: some View {
-        let entries = model.launchEntries
+        let modOrganizerEntries = model.modOrganizerEntries
+        let customEntries = model.customEntries
         ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 24) {
                 if let error = model.loadError ?? model.saveError ?? launcher.error {
                     Label(error, systemImage: "exclamationmark.triangle.fill")
                         .foregroundStyle(StatusTone.error.color)
                 }
-                if entries.isEmpty {
+                if modOrganizerEntries.isEmpty && customEntries.isEmpty {
                     ContentUnavailableView(
                         "Nothing to launch",
                         systemImage: "play.slash",
                         description: Text("Set ModOrganizer.exe or a custom .exe in Launch options.")
                     )
                 } else {
-                    LazyVGrid(columns: columns, alignment: .leading, spacing: 24) {
-                        ForEach(entries) { entry in
-                            Button { launcher.launch(entry, model: model) } label: { LaunchTile(entry: entry) }
-                                .buttonStyle(LaunchTileButtonStyle())
-                                .disabled(isLocked)
-                        }
-                    }
+                    grid(modOrganizerEntries)
+                    grid(customEntries)
                 }
             }
             .padding(24)
+        }
+    }
+
+    /// One row of tiles; wraps when more tiles than fit. An empty list draws nothing.
+    @ViewBuilder
+    private func grid(_ entries: [LaunchEntry]) -> some View {
+        if !entries.isEmpty {
+            LazyVGrid(columns: columns, alignment: .leading, spacing: 24) {
+                ForEach(entries) { entry in
+                    Button { launcher.launch(entry, model: model) } label: { LaunchTile(entry: entry) }
+                        .buttonStyle(LaunchTileButtonStyle())
+                        .disabled(isLocked)
+                }
+            }
         }
     }
 }
@@ -53,9 +64,18 @@ private struct LaunchTile: View {
     }
 }
 
-/// Drawn stand-ins for real artwork: a rounded square with a symbol.
+/// The tile artwork compiled from the .icon documents into the wrapper's
+/// Resources, with a drawn rounded square when the wrapper predates them.
 private struct LaunchIcon: View {
     let kind: LaunchEntry.Kind
+
+    private var artworkName: String {
+        switch kind {
+        case .modOrganizer: "mo2"
+        case .anomalyDX11, .anomalyDX11AVX: "anomalyexes"
+        case .custom: "custom"
+        }
+    }
 
     private var symbol: String {
         switch kind {
@@ -74,14 +94,8 @@ private struct LaunchIcon: View {
     }
 
     var body: some View {
-        RoundedRectangle(cornerRadius: Layout.tileIconSize * 0.225, style: .continuous)
-            .fill(tint.gradient)
+        artwork
             .frame(width: Layout.tileIconSize, height: Layout.tileIconSize)
-            .overlay {
-                Image(systemName: symbol)
-                    .font(.system(size: Layout.tileIconSize * 0.45))
-                    .foregroundStyle(.white)
-            }
             .overlay(alignment: .bottomTrailing) {
                 if kind == .anomalyDX11AVX {
                     Text("AVX")
@@ -90,10 +104,27 @@ private struct LaunchIcon: View {
                         .padding(.vertical, 1)
                         .background(.black.opacity(0.55), in: .capsule)
                         .foregroundStyle(.white)
-                        .padding(5)
+                        .padding(.trailing, 8)
+                        .padding(.bottom, 10)
                 }
             }
             .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private var artwork: some View {
+        if let image = TileArtwork.image(named: artworkName) {
+            Image(nsImage: image).resizable().scaledToFit()
+        } else {
+            RoundedRectangle(cornerRadius: Layout.tileIconSize * 0.225, style: .continuous)
+                .fill(tint.gradient)
+                .padding(Layout.tileIconSize * 0.1)
+                .overlay {
+                    Image(systemName: symbol)
+                        .font(.system(size: Layout.tileIconSize * 0.4))
+                        .foregroundStyle(.white)
+                }
+        }
     }
 }
 

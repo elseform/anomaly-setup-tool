@@ -21,7 +21,7 @@ Extract the downloaded setup-tool archive and open `Anomaly Setup Tool.app`, or 
 2. The app name is filled in from the selected executable (`ModOrganizer` for `ModOrganizer.exe`), with `-2`, `-3`, and so on added if an app of that name already exists in `~/Applications`. Change it if you like, then click **Continue**.
 3. On **Options**, the engine is downloaded automatically; choose **Provide engine locally** to pick a local `.tar.xz` archive instead. **Dependencies** lists the Microsoft runtime files and whether each is already present; choose **Provide installers locally** to point at a folder containing downloaded copies. **Save setup log** writes a log of the run; leave it enabled for troubleshooting.
 4. Click **Create wrapper**.
-5. Open the created app from Finder. It opens on a grid of launch tiles: **ModOrganizer**, **Anomaly - DX11** and **Anomaly - DX11 (AVX)** (Mod Organizer shortcuts) while a ModOrganizer.exe path is set, and a tile for the custom executable while that path is set. Click a tile to launch it; the window quits after handing off to the launch process. Adjust settings, or set either path, from the sidebar first.
+5. Open the created app from Finder. It opens on a grid of launch tiles: **ModOrganizer**, **Anomaly - DX11** and **Anomaly - DX11 (AVX)** (Mod Organizer shortcuts) while a ModOrganizer.exe path is set, and, in a second row, one tile per custom executable you added. Click a tile to launch it. Adjust settings, or set the ModOrganizer path and add custom executables, from the sidebar first.
 
 Setup checks the selected executable exists; it does not validate the contents or health of the Anomaly installation.
 
@@ -59,7 +59,7 @@ Each wrapper has its own Wine prefix and settings outside the app bundle:
 
 Setup seeds defaults with no launch arguments. The wrapper saves settings automatically, commits pending edits before launching or closing, and remains open if saving fails. **Reset to Defaults** preserves both executable paths and their working directories.
 
-**Launch options** holds two paths: `ModOrganizer.exe` and a custom `.exe`. Setup fills in whichever one you chose when creating the wrapper; the other can be set there afterwards, and either can be cleared. The pickers accept a readable local `.exe` (the ModOrganizer picker only `ModOrganizer.exe`), using the existing `G:` mapping where possible and `Z:` otherwise. The Anomaly tiles run the Mod Organizer executables titled `Anomaly (DX11)` and `Anomaly (DX11-AVX)`, so those titles must exist in Mod Organizer's executable list. Launch arguments apply to the custom executable only and are never passed to Mod Organizer; configure game arguments in Mod Organizer itself. Wine and graphics settings still apply. Changing a path does not modify drive mappings, install runtime files, or update USVFS.
+**Launch options** holds the `ModOrganizer.exe` path and any number of custom `.exe` files. Setup fills in whichever one you chose when creating the wrapper; the ModOrganizer path can be set or cleared there afterwards. **Choose Custom .exe…** adds another custom executable as a row with its own tile name (edit it to rename the tile; empty restores the file name) and a − button that removes it. The pickers accept a readable local `.exe` (the ModOrganizer picker only `ModOrganizer.exe`), using the existing `G:` mapping where possible and `Z:` otherwise. The Anomaly tiles run the Mod Organizer executables titled `Anomaly (DX11)` and `Anomaly (DX11-AVX)`, so those titles must exist in Mod Organizer's executable list. Launch arguments apply to custom executables only and are never passed to Mod Organizer; configure game arguments in Mod Organizer itself. Wine and graphics settings still apply. Changing a path does not modify drive mappings, install runtime files, or update USVFS.
 
 Launch output goes to `~/Library/Logs/<app name>/launcher.log`. The native UI quits after creating the launcher process; later Wine or game failures are recorded in that log. The CLI helper at `Contents/MacOS/launcher` remains available, including explicit argument forwarding.
 
@@ -115,7 +115,7 @@ Developers can set `ANOMALY_ENGINE_ARTIFACTS_DIR` in the app's environment to pr
 ### Launcher resources and engine compatibility
 
 `build.sh bundle` creates `dist/Anomaly Setup Tool.app/Contents/Resources/launcher/`
-with `AnomalyLauncher`, `SetupTool.icns`, `Assets.car`, and `icon-info.plist`.
+with `AnomalyLauncher`, `SetupTool.icns`, `Assets.car`, `icon-info.plist`, and the launch tile icons `mo2.icns`, `anomalyexes.icns`, and `custom.icns` (compiled from `sources/AnomalyLauncher/Resources/*.icon`).
 The setup backend passes this directory to `interactive_setup.py` through
 `--launcher-resources`; direct script callers must supply it too. Missing or
 invalid resources fail before wrapper or prefix changes. Run the bundle build

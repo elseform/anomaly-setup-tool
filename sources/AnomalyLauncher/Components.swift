@@ -23,12 +23,13 @@ struct SettingLabel: View {
 /// keystroke.
 struct CommitTextField: View {
     @Binding var text: String
+    var prompt = ""
     var isEnabled = true
     var onCommit: () -> Void
     @FocusState private var isFocused: Bool
 
     var body: some View {
-        TextField("", text: $text)
+        TextField("", text: $text, prompt: Text(prompt))
             .labelsHidden()
             .textFieldStyle(.roundedBorder)
             .frame(width: Layout.fieldWidth)
