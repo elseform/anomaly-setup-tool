@@ -113,7 +113,7 @@ struct ConfiguratorView: View {
     @State private var category = SettingCategory.play
     @State private var confirmReset = false
 
-    private var isLocked: Bool { !model.canEdit || launcher.isLaunching }
+    private var isLocked: Bool { !model.canEdit || launcher.isRunning }
 
     var body: some View {
         NavigationSplitView {
@@ -129,6 +129,10 @@ struct ConfiguratorView: View {
             .background(.bar)
         }
         .frame(minWidth: Layout.minimumWidth, minHeight: Layout.minimumHeight)
+        .disabled(launcher.isRunning)
+        .overlay {
+            if let entry = launcher.running { RunningOverlay(label: entry.label) }
+        }
         // The wrapper's name is the executable it was made for, which is
         // wrong once other tiles launch something else.
         .toolbar(removing: .title)

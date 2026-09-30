@@ -107,32 +107,37 @@ struct LauncherTests {
         model.setVar("MTL_CAPTURE_ENABLED", enabled: false, value: "0")
         check(model.state.dxmtConfig["d3d11.preferredMaxFrameRate"]?.enabled == false, "defaults leave frame cap off")
         var starts = 0
-        var exits = 0
         var spawned: [[String]] = []
-        let launcher = LaunchController(spawn: { _, _, arguments in
+        var finish: (@Sendable () -> Void)?
+        let launcher = LaunchController(spawn: { _, _, arguments, onExit in
             let saved = loadState(configFile: config.path)
             check(saved.vars["DEFAULT_GAME_ARGS"]?.value == "-pending", "flush before launch")
             check(unquote(saved.passthrough["EXE_PATH"] ?? "") == selected.windowsPath, "custom launch activates the custom path")
             spawned.append(arguments)
             starts += 1
-        }, terminate: { exits += 1 })
+            finish = onExit
+        })
         model.setVar("DEFAULT_GAME_ARGS", enabled: true, value: "-pending", save: false)
         launcher.launch(.custom(path: model.path(for: .custom)), model: model)
         launcher.launch(.custom(path: model.path(for: .custom)), model: model)
-        check(starts == 1 && exits == 1 && spawned == [[]], "single handoff without arguments")
-        let shortcut = LaunchController(spawn: { _, _, arguments in
+        check(starts == 1 && spawned == [[]], "single launch without arguments")
+        check(launcher.isRunning && launcher.running?.kind == .custom, "locked while the program runs")
+        finish?()
+        for _ in 0..<100 where launcher.isRunning { RunLoop.main.run(until: Date().addingTimeInterval(0.02)) }
+        check(!launcher.isRunning && launcher.running == nil, "unlocks when the program exits")
+        let shortcut = LaunchController(spawn: { _, _, arguments, _ in
             let saved = loadState(configFile: config.path)
             check(unquote(saved.passthrough["EXE_PATH"] ?? "") == external.windowsPath, "shortcut launch activates the MO2 path")
             check(arguments == ["moshortcut://Anomaly (DX11-AVX)"], "shortcut argument")
-        }, terminate: {})
+        })
         shortcut.launch(.anomalyDX11AVX, model: model)
         check(shortcut.error == nil, "shortcut launch succeeds: \(shortcut.error ?? "")")
-        let failing = LaunchController(spawn: { _, _, _ in throw LauncherError.message("spawn failed") }, terminate: { fatalError("must not quit") })
+        let failing = LaunchController(spawn: { _, _, _, _ in throw LauncherError.message("spawn failed") })
         failing.launch(.custom(path: model.path(for: .custom)), model: model)
-        check(failing.error == "spawn failed" && !failing.isLaunching, "recover spawn failure")
+        check(failing.error == "spawn failed" && !failing.isRunning, "recover spawn failure")
         try fm.removeItem(at: config)
         try fm.createDirectory(at: config, withIntermediateDirectories: false)
-        let blocked = LaunchController(spawn: { _, _, _ in fatalError("must not spawn") }, terminate: { fatalError("must not quit") })
+        let blocked = LaunchController(spawn: { _, _, _, _ in fatalError("must not spawn") })
         blocked.launch(.custom(path: model.path(for: .custom)), model: model)
         check(model.saveError != nil && blocked.error != nil, "save failure blocks launch")
         try fm.removeItem(at: config)
@@ -142,17 +147,17 @@ struct LauncherTests {
         check(blocked.error != nil, "missing target blocks launch")
         model.setVar("DEFAULT_GAME_ARGS", enabled: true, value: "bad\nline", save: false)
         check(!model.persist(), "reject multiline shell value")
-        // The spawned helper must be independent of the native UI process.
+        // The spawned helper runs on its own and reports when it exits.
         let witness = root.appendingPathComponent("child-survived")
         let child = root.appendingPathComponent("child-helper")
         try "#!/bin/sh\nsleep 0.2\nprintf survived > \(shellQuote(witness.path))\n".write(to: child, atomically: true, encoding: .utf8)
         try fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: child.path)
-        try LaunchController.startProcess(helper: child, log: root.appendingPathComponent("child.log"))
+        try LaunchController.startProcess(helper: child, log: root.appendingPathComponent("child.log"), onExit: {})
         let deadline = Date().addingTimeInterval(3)
         while !fm.fileExists(atPath: witness.path) && Date() < deadline {
             Thread.sleep(forTimeInterval: 0.02)
         }
-        check(fm.fileExists(atPath: witness.path), "child continues after handoff")
-        print("Launcher model and handoff tests passed")
+        check(fm.fileExists(atPath: witness.path), "child runs to completion")
+        print("Launcher model and launch tests passed")
     }
 }

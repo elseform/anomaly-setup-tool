@@ -4,14 +4,10 @@ import AppKit
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     let model = ConfiguratorModel()
-    var didHandOff = false
-    lazy var launcher = LaunchController { [weak self] in
-        self?.didHandOff = true
-        NSApplication.shared.terminate(nil)
-    }
+    let launcher = LaunchController()
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        didHandOff || !model.canEdit || model.persist() ? .terminateNow : .terminateCancel
+        !model.canEdit || model.persist() ? .terminateNow : .terminateCancel
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {

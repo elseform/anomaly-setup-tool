@@ -9,6 +9,8 @@
   the custom executable while that path is set. **Launch options** now holds both paths; setup fills in the
   one chosen at creation and existing wrappers keep their target. Launch arguments apply to the custom
   executable only. The window title no longer shows the wrapper's name, and the bottom-bar Launch button is gone.
+- The wrapper window stays open after a launch instead of closing. While the launched program runs, the whole
+  window is greyed out under a "Wrapper is running" message, and it unlocks by itself when that program exits.
 - Replaced the Sikarugir wrapper pipeline with the `gamma-wine-engine` engine archive
   (CrossOver 26.3 / Wine 11 with DXMT), driven by this tool's own
   `interactive_setup.py`. The wizard no longer installs Homebrew casks or resolves
