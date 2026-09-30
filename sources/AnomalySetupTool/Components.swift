@@ -35,33 +35,6 @@ struct RowLabel: View {
     }
 }
 
-/// Explanatory text under a form section, in the launcher's footer style.
-struct SectionNote: View {
-    let text: String
-
-    init(_ text: String) { self.text = text }
-
-    var body: some View {
-        Text(text)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-/// The rows inside an open disclosure, spaced apart and clear of its title.
-struct DisclosureBody<Content: View>: View {
-    @ViewBuilder var content: () -> Content
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            content()
-        }
-        .padding(.top, 8)
-    }
-}
-
 extension View {
     /// The grouped form every page uses, with room above the first section.
     func pageForm() -> some View {
