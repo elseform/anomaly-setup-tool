@@ -165,8 +165,9 @@ private struct PathLabel: View {
 
     var body: some View {
         VStack(alignment: alignment, spacing: 2) {
-            Text(macPath ?? winePath)
+            Text(macPath.map { ($0 as NSString).abbreviatingWithTildeInPath } ?? winePath)
                 .lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+                .help(macPath ?? winePath)
             if macPath != nil {
                 Text(winePath)
                     .font(.caption)
