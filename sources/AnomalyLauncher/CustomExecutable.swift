@@ -28,9 +28,10 @@ struct CustomExecutable: Identifiable, Equatable {
         return trimmed.isEmpty ? defaultName : trimmed
     }
 
+    var macPath: String? { LaunchTarget.macPath(windowsPath: path, runDirectory: runDirectory) }
+
     static func defaultName(forPath path: String) -> String {
-        let file = path.replacingOccurrences(of: "\\", with: "/").split(separator: "/").last.map(String.init) ?? path
-        return (file as NSString).deletingPathExtension
+        (LaunchTarget.fileName(ofWindowsPath: path) as NSString).deletingPathExtension
     }
 }
 
