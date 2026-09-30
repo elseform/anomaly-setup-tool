@@ -2,10 +2,15 @@ import SwiftUI
 
 /// Versions of the launcher, the engine and DXMT inside this wrapper.
 struct AboutView: View {
+    let model: ConfiguratorModel
+    let isLocked: Bool
     private let engine: EngineInfo?
+    @State private var confirmReset = false
 
-    init(install: InstallLayout) {
-        engine = EngineInfo.load(install: install)
+    init(model: ConfiguratorModel, isLocked: Bool) {
+        self.model = model
+        self.isLocked = isLocked
+        engine = EngineInfo.load(install: model.install)
     }
 
     var body: some View {
@@ -21,6 +26,15 @@ struct AboutView: View {
             Section("DXMT") {
                 row("Release", engine?.dxmt?.tag, link: engine?.dxmt?.releaseURL)
                 row("Commit", engine?.dxmt?.shortCommit)
+            }
+            Section {
+                Button("Reset to Defaults…", role: .destructive) { confirmReset = true }
+                    .disabled(isLocked)
+                    .confirmationDialog("Reset all settings to their defaults?", isPresented: $confirmReset) {
+                        Button("Reset", role: .destructive, action: model.resetToDefaults)
+                    } message: {
+                        Text("Every setting, including startup arguments, goes back to what a new wrapper starts with.")
+                    }
             }
         }
         .formStyle(.grouped)

@@ -96,7 +96,6 @@ struct SettingRow: View {
             case .env(let key):
                 if let entry = schemaByKey[key] {
                     SchemaRow(model: model, entry: entry)
-                        .disabled(key == "DEFAULT_GAME_ARGS" && model.customExecutables.isEmpty)
                 }
             case .dxmt(let key):
                 if let entry = dxmtConfigByKey[key] {
@@ -111,9 +110,6 @@ struct ConfiguratorView: View {
     let model: ConfiguratorModel
     let launcher: LaunchController
     @State private var category = SettingCategory.play
-    @State private var confirmReset = false
-
-    private var isLocked: Bool { !model.canEdit || launcher.isRunning }
 
     var body: some View {
         NavigationSplitView {
@@ -149,16 +145,6 @@ struct ConfiguratorView: View {
                 .foregroundStyle(.secondary)
                 .help(Links.discordHelp)
             Spacer()
-            Text("Settings save automatically.").font(.caption).foregroundStyle(.tertiary)
-            Button("Reset to Defaults…", role: .destructive) {
-                confirmReset = true
-            }
-            .disabled(isLocked)
-            .confirmationDialog("Reset all settings to their defaults?", isPresented: $confirmReset) {
-                Button("Reset", role: .destructive, action: model.resetToDefaults)
-            } message: {
-                Text("Every setting, including launch arguments, goes back to what a new wrapper starts with.")
-            }
         }
         .padding()
     }

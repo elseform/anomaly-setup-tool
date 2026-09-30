@@ -41,9 +41,9 @@ Choose a tile on **Launch**:
 
 - **ModOrganizer** opens MO2.
 - **Anomaly - DX11** and **Anomaly - DX11 (AVX)** start MO2 shortcuts. Your MO2 executable list must contain the exact titles `Anomaly (DX11)` and `Anomaly (DX11-AVX)` respectively.
-- Custom tiles start executables added in **Launch options**. Use **Choose Custom .exe…**, edit the tile name, or remove an entry with **−**.
+- Custom tiles start executables added in **Executables**. Use **Add custom executable…**, edit the tile name, set its startup arguments, or remove an entry with **−**.
 
-Set or change the MO2 path in **Launch options**. Game arguments entered here apply only to custom executables; configure MO2 game arguments in MO2 itself.
+Set or change the MO2 path in **Executables**. Startup arguments are set per custom executable and are never passed to MO2; configure MO2 game arguments in MO2 itself. **Reset to Defaults…** is on the **About** page.
 
 The sidebar groups frame rate and sync, display, and upscaling controls, plus advanced performance, rendering fixes, compatibility, Wine, and debugging settings.
 

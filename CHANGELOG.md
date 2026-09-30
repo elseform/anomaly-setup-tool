@@ -19,10 +19,11 @@
   name is assumed for either. The interactive wizard's default executable path is `bin/AnomalyDX11.exe`.
 - The wrapper window opens on a grid of launch tiles instead of a single Launch button: ModOrganizer and two
   Mod Organizer shortcuts (Anomaly - DX11, Anomaly - DX11 (AVX)) while a ModOrganizer.exe path is set, and
-  a second row with one tile per custom executable. **Launch options** holds the ModOrganizer.exe path and
-  any number of custom executables, each with a renamable tile and a − button to remove it; setup fills in
-  the one chosen at creation and existing wrappers keep their target. Launch arguments apply to custom
-  executables only. The tiles use the Icon Composer artwork in `sources/AnomalyLauncher/Resources/`. The window title no longer shows the wrapper's name, and the bottom-bar Launch button is gone.
+  a second row with one tile per custom executable. **Executables** holds the ModOrganizer.exe path and
+  any number of custom executables, each with a renamable tile, its own startup arguments and a − button to
+  remove it; setup fills in the one chosen at creation and existing wrappers keep their target. The old
+  single launch-arguments value is copied to each existing custom executable. Startup arguments are never
+  passed to Mod Organizer. **Reset to Defaults…** moved to **About**. The tiles use the Icon Composer artwork in `sources/AnomalyLauncher/Resources/`. The window title no longer shows the wrapper's name, and the bottom-bar Launch button is gone.
 - The wrapper window stays open after a launch instead of closing. While the launched program runs, the whole
   window is greyed out under a "Wrapper is running" message, and it unlocks by itself when that program exits.
 - New wrappers use the setup tool's icon.
