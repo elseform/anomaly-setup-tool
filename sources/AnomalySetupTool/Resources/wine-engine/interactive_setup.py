@@ -381,8 +381,12 @@ shopt -u nocasematch
 
 # bash 3.2 on macOS chokes on "${@}" under set -u when empty
 if [[ $# -eq 0 && -n "${DEFAULT_GAME_ARGS:-}" ]]; then
+  # Split on spaces only: no quote handling, and no filename expansion of a
+  # "*" or "?" against the working directory.
+  set -f
   # shellcheck disable=SC2086
   set -- $DEFAULT_GAME_ARGS
+  set +f
 fi
 
 exec taskpolicy -l 0 -t 0 arch -x86_64 "$ENGINE_DIR/bin/wine" "$EXE_PATH" "$@"

@@ -147,7 +147,7 @@ private struct CustomExecutableSection: View {
             } label: {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Startup arguments")
-                    Text("Extra arguments passed to this executable when it starts.")
+                    Text("Extra arguments passed to this executable when it starts. Separate them with spaces; quotes are not supported.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
