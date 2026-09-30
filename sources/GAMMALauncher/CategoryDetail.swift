@@ -8,7 +8,7 @@ struct CategoryDetail: View {
     let launcher: LaunchController
     let category: SettingCategory
 
-    private var isLocked: Bool { !model.canEdit || launcher.isLaunching }
+    private var isLocked: Bool { !model.canEdit || launcher.isRunning }
 
     var body: some View {
         switch category {

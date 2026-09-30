@@ -6,7 +6,7 @@ struct LaunchGridView: View {
     let launcher: LaunchController
 
     private let columns = [GridItem(.adaptive(minimum: Layout.tileWidth), spacing: 24, alignment: .top)]
-    private var isLocked: Bool { !model.canEdit || launcher.isLaunching }
+    private var isLocked: Bool { !model.canEdit || launcher.isRunning }
 
     var body: some View {
         let entries = model.launchEntries
