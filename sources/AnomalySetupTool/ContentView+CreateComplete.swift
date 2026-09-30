@@ -169,29 +169,8 @@ struct CompletePage: View {
                 USVFSStatusRow(outcome: model.usvfsPlanForRun, finished: true)
             }
 
-            Section("Next steps") {
-                ForEach(nextSteps, id: \.number) { step in
-                    Label {
-                        Text(step.text)
-                            .fixedSize(horizontal: false, vertical: true)
-                    } icon: {
-                        Image(systemName: "\(step.number).circle.fill")
-                            .foregroundStyle(.tint)
-                    }
-                }
-            }
-
             Section {
-                LabeledContent {
-                    HStack(spacing: 12) {
-                        Link(SupportCopy.discordTitle, destination: SupportCopy.discordURL)
-                            .help(SupportCopy.discordHelp)
-                        Link(SupportCopy.githubTitle, destination: SupportCopy.githubURL)
-                            .help(SupportCopy.githubHelp)
-                    }
-                } label: {
-                    RowLabel(title: "There may be some additional mods required for optimal in-game performance. Check Discord or GitHub for more info.")
-                }
+                Text("There may be some additional mods required for optimal in-game performance. Check Discord or GitHub for more info.")
                 if model.saveVerboseLog {
                     if model.savedLogPath.isEmpty {
                         Text("Setup log location unavailable")
@@ -213,16 +192,5 @@ struct CompletePage: View {
             }
         }
         .pageForm()
-    }
-
-    /// The generated wrapper owns both settings and launching.
-    private var nextSteps: [(number: Int, text: LocalizedStringKey)] {
-        let launch: LocalizedStringKey = model.configuration.usesCustomLaunchExecutable
-            ? "Press **Launch** to start **\(model.selectedLaunchExecutableLabel)**."
-            : "Press **Launch** to open Mod Organizer, then **Run** there to start the game."
-        return [
-            (1, "Open **\(model.outputAppName)** from ~/Applications. Show in Finder below takes you there."),
-            (2, launch),
-        ]
     }
 }
