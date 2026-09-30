@@ -68,6 +68,22 @@
   on the welcome page. **Create wrapper** starts setup from the options page.
 - Setup shows whether ModOrganizer's USVFS files need updating and reports the result on completion.
 
+### Fixes
+
+- Quitting the setup tool while a wrapper is being created now asks first, then stops setup and removes the
+  unfinished wrapper instead of leaving it running in the background. The setup tool opens a single window.
+- The wrapper name is trimmed before it is handed to setup, so the wrapper is created exactly where the wizard
+  says it will be.
+- In the launcher, closing or quitting after a failed save offers to discard the unsaved changes instead of
+  refusing to close, and the error now shows on the About page too.
+- A launch that fails right after starting now shows an error pointing to `launcher.log`.
+- Startup arguments are split on spaces only: a `*` or `?` is passed to the program as it is, and quotes are
+  not supported. This applies to wrappers created with this version.
+- `app.env` lines you edited by hand that use `$VAR` or `` `command` `` are kept as written instead of being
+  rewritten as literal text, and commented-out executable lines stay commented.
+- An oversized `ANOMALY_CUSTOM_EXE_COUNT` in `app.env` no longer makes the launcher hang.
+- Engine releases no longer need a `.sha256` file next to the archive; the checksum comes from the manifest.
+
 ### Removals
 
 - Removed the bundled GPTK4 D3DMetal payload, the bundled DirectX redistributable DLLs,
