@@ -12,7 +12,8 @@
   bundle identifier `com.elseform.anomaly.wine-engine.<name>`, and the default wrapper name is `Anomaly`
   (`stalker-anomaly` in the wizard). Logs, caches and MO2 backups moved to `anomaly-setup-tool` folders.
   Wrappers created by earlier versions keep running with their own launcher and engine copy; create new
-  ones with this version.
+  ones with this version. The MO2 location saved by the wizard starts empty, because settings moved to the
+  new `anomaly-setup-tool` folder.
 - The wrapper window opens on a grid of launch tiles instead of a single Launch button: ModOrganizer and two
   Mod Organizer shortcuts (Anomaly - DX11, Anomaly - DX11 (AVX)) while a ModOrganizer.exe path is set, and
   the custom executable while that path is set. **Launch options** now holds both paths; setup fills in the
