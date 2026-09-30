@@ -91,10 +91,11 @@ Building requires full Xcode with Icon Composer-capable `actool`, selected throu
 This compiles the GUI and backend with `swiftc` for Apple Silicon and macOS 26, builds and ad-hoc signs `dist/Anomaly Setup Tool.app`, then replaces `~/Applications/Anomaly Setup Tool.app` with that build. No Xcode project or sibling engine checkout is required. The build also compiles the native wrapper UI and icon; end users need no compiler or Xcode.
 
 - `./build.sh run` builds and runs the GUI from `dist/` without installing it.
+- `./build.sh install` copies the `dist/` app that `./test.sh` or `./build.sh bundle` just built into `~/Applications` without rebuilding. It refuses a built app that is older than the sources.
 - `./build.sh clean` removes `dist/`.
 - `./test.sh` runs Swift unit tests, backend CLI integration tests, and a build smoke test. The smoke test runs `build.sh bundle`, which builds `dist/` without installing anything.
 
-After every change to the source, run `./build.sh` so that `~/Applications/Anomaly Setup Tool.app` is a copy of the current source. `./test.sh` does not install.
+After every change to the source, run `./test.sh` and then `./build.sh install` (or `./build.sh` alone, which rebuilds and installs) so that `~/Applications/Anomaly Setup Tool.app` is a copy of the current source. `./test.sh` does not install.
 
 Developers can set `ANOMALY_ENGINE_ARTIFACTS_DIR` in the app's environment to prefill the local archive field with the most recently modified `.tar.xz` in that directory.
 
