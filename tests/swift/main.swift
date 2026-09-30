@@ -63,6 +63,7 @@ func run(_ name: String, _ body: () throws -> Void) {
 let config = SetupConfigurationTests()
 run("testOutputAppPathAddsAppSuffix", config.testOutputAppPathAddsAppSuffix)
 run("testOutputAppPathDoesNotDuplicateAppSuffix", config.testOutputAppPathDoesNotDuplicateAppSuffix)
+run("testBundleNameIsTrimmedAndWithoutAppSuffix", config.testBundleNameIsTrimmedAndWithoutAppSuffix)
 run("testDefaultOutputAppPathUsesApplicationsFolder", config.testDefaultOutputAppPathUsesApplicationsFolder)
 run("testDefaultAppNameIsAnomalyForModOrganizer", config.testDefaultAppNameIsAnomalyForModOrganizer)
 run("testDefaultAppNameFollowsACustomExecutable", config.testDefaultAppNameFollowsACustomExecutable)
@@ -102,6 +103,7 @@ run("testPicksTheNewestEngineReleaseByVersionNotArrayOrder", engineArchive.testP
 run("testIgnoresReleasesPublishedUnderTheGammaName", engineArchive.testIgnoresReleasesPublishedUnderTheGammaName)
 run("testIgnoresReleasesWithoutTheEngineTagPrefix", engineArchive.testIgnoresReleasesWithoutTheEngineTagPrefix)
 run("testIgnoresAMalformedReleaseMissingSidecarAssets", engineArchive.testIgnoresAMalformedReleaseMissingSidecarAssets)
+run("testResolvesAReleaseWithoutASha256Asset", engineArchive.testResolvesAReleaseWithoutASha256Asset)
 run("testThrowsWhenNoEngineReleaseExists", engineArchive.testThrowsWhenNoEngineReleaseExists)
 run("testToolVersionMatchesBuildScriptAppVersion", engineArchive.testToolVersionMatchesBuildScriptAppVersion)
 
