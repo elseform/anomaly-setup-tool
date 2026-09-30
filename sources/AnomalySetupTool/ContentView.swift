@@ -20,7 +20,10 @@ struct ContentView: View {
             Divider()
             footer
         }
-        .frame(width: Layout.windowWidth, height: Layout.windowHeight)
+        .frame(
+            width: Layout.windowWidth,
+            height: step == .create ? Layout.creationWindowHeight : Layout.windowHeight
+        )
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.18), value: step)
         .onChange(of: model.isRunning) { _, isRunning in
             if isRunning {

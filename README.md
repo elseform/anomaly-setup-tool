@@ -1,128 +1,68 @@
 # Anomaly Setup Tool
 
-Status: current development version, 0.96 (`dev` branch).
+Run your existing **S.T.A.L.K.E.R. Anomaly** installation on macOS with a native setup wizard and launcher. **Setup Tool** creates a Wine wrapper using [anomaly-wine-engine](https://github.com/elseform/anomaly-wine-engine) and a [custom DXMT fork](https://github.com/elseform/dxmt/releases);
+The wrapper’s **Launcher / Configurator** provides a native launcher for MO2-managed Anomaly installation.
 
-Native macOS tool for creating a Wine `.app` wrapper around an existing S.T.A.L.K.E.R. Anomaly installation, using [anomaly-wine-engine](https://github.com/elseform/anomaly-wine-engine) and DXMT. It does not install Anomaly.
+The tool does not install Anomaly or GAMMA. You need an installation already on your Mac.
 
-This README describes the current source. Published builds are available on the [Releases page](https://github.com/elseform/anomaly-setup-tool/releases); check the version and release notes before following these instructions with an older build.
+**[Download Anomaly Setup Tool](https://github.com/elseform/anomaly-setup-tool/releases)** — extract the archive and open `Anomaly Setup Tool.app`. Check the release notes when using an older build.
 
 ## Requirements
 
-- An Apple Silicon Mac running macOS 26 or newer, with Rosetta 2 for the Wine engine.
-- An existing Anomaly installation and its `ModOrganizer.exe`, or another Windows executable to launch.
-- Python 3 available to setup. The backend checks `/usr/bin/python3`, `/opt/homebrew/bin/python3`, then `/usr/local/bin/python3`.
-- Internet access for automatic engine resolution and missing runtime downloads. For offline setup, select a local engine archive and provide or cache the runtime files described below.
+- An Apple Silicon Mac running macOS 26 or newer, with Rosetta 2 installed.
+- An existing Anomaly installation managed by `ModOrganizer.exe`.
+- Python 3 available at `/usr/bin/python3`, `/opt/homebrew/bin/python3`, or `/usr/local/bin/python3`.
 
-## Create a Wrapper
+## Setup Tool
 
-Extract the downloaded setup-tool archive and open `Anomaly Setup Tool.app`, or [build the current source](#build-and-test). Builds made by `build.sh` are ad-hoc signed, not notarized.
+<p>
+  <a href="docs/images/setup-welcome.png"><img src="docs/images/setup-welcome.png" width="260" alt="Setup Tool welcome page with executable selection and wrapper name"></a>
+  <a href="docs/images/setup-options.png"><img src="docs/images/setup-options.png" width="260" alt="Setup Tool options for engine downloads, runtime installers, and logging"></a>
+  <a href="docs/images/setup-progress.png"><img src="docs/images/setup-progress.png" width="260" alt="Setup Tool creating a wrapper with progress and installation stages"></a>
+</p>
 
-1. On the first page, click **Choose…** and select `ModOrganizer.exe` from your existing installation. You can select another `.exe` as the launch target instead. The page lists what setup will do; the creation page says whether setup updates ModOrganizer's `usvfs` files.
-2. The app name is filled in from the selected executable (`ModOrganizer` for `ModOrganizer.exe`), with `-2`, `-3`, and so on added if an app of that name already exists in `~/Applications`. Change it if you like, then click **Continue**.
-3. On **Options**, the engine is downloaded automatically; choose **Provide engine locally** to pick a local `.tar.xz` archive instead. **Dependencies** lists the Microsoft runtime files and whether each is already present; choose **Provide installers locally** to point at a folder containing downloaded copies. **Save setup log** writes a log of the run; leave it enabled for troubleshooting.
-4. Click **Create wrapper**.
-5. Open the created app from Finder. It opens on a grid of launch tiles: **ModOrganizer**, **Anomaly - DX11** and **Anomaly - DX11 (AVX)** (Mod Organizer shortcuts) while a ModOrganizer.exe path is set, and, in a second row, one tile per custom executable you added. Click a tile to launch it. Adjust settings, or set the ModOrganizer path and add custom executables, from the sidebar first.
+1. Click **Choose…** and select your installation’s `ModOrganizer.exe`, or another executable.
+2. Enter a **Wrapper name**, check the **Saved as** location, and click **Continue**.
+3. On **Options**, keep automatic engine and installer downloads selected. Alternatively, choose **Provide engine locally** for a `.tar.xz` archive and **Provide installers locally** for a folder of runtime files.
+4. Leave **Save setup log** enabled, then click **Create wrapper**. Wait for setup to finish.
+5. Open your new app in `~/Applications` to use its launcher.
 
-Setup checks the selected executable exists; it does not validate the contents or health of the Anomaly installation.
+When the selected executable’s folder contains `ModOrganizer.exe`, setup also updates its USVFS files if needed. Differing originals are backed up in that folder under `anomaly-setup-tool-backups/usvfs-<timestamp>/` before replacement.
 
-## Engine Selection and Downloads
+## Launcher / Configurator
 
-With **Download the latest release from GitHub** selected, setup always uses the newest `engine-*` release from `elseform/anomaly-wine-engine`, ordered by engine version. It downloads the archive and verifies its SHA-256 against the release manifest. Cached archives are checked by checksum before reuse.
+<p>
+  <a href="docs/images/launcher.png"><img src="docs/images/launcher.png" width="260" alt="Launcher with ModOrganizer, Anomaly DX11, AVX, and a custom GAMMA tile"></a>
+  <a href="docs/images/upscaling.png"><img src="docs/images/upscaling.png" width="260" alt="Configurator upscaling page with DLSS Support and MetalFX Upscaling controls"></a>
+  <a href="docs/images/about.png"><img src="docs/images/about.png" width="260" alt="Configurator About page showing launcher, Wine engine, and DXMT versions"></a>
+</p>
 
-A local archive is used exactly as selected, with no version check. Automatic selection needs access to the release listing and manifest even when the archive is cached; offline, select a local archive.
+Choose a tile on **Launch**:
 
-The wizard creates DXMT wrappers with the engine's declared runtime dependencies. It has no renderer, Wine-version, Winetricks-verb, or display-mode selector.
+- **ModOrganizer** opens MO2.
+- **Anomaly - DX11** and **Anomaly - DX11 (AVX)** start MO2 shortcuts. Your MO2 executable list must contain the exact titles `Anomaly (DX11)` and `Anomaly (DX11-AVX)` respectively.
+- Custom tiles start executables added in **Launch options**. Use **Choose Custom .exe…**, edit the tile name, or remove an entry with **−**.
 
-## Runtime Files and Installation Changes
+Set or change the MO2 path in **Launch options**. Game arguments entered here apply only to custom executables; configure MO2 game arguments in MO2 itself.
 
-The engine archive supplies the runtime manifest and fetcher. Setup obtains the declared files from checksum-pinned downloads, reusing a supplied folder before the cache. The current runtime list includes:
+The sidebar groups frame rate and sync, display, and upscaling controls, plus advanced performance, rendering fixes, compatibility, Wine, and debugging settings.
 
-- `VC_redist.x64.exe` — Visual C++ 2015–2022 Redistributable.
-- `directx_Jun2010_redist.exe` — DirectX End-User Runtime, June 2010.
-- `d3dcompiler_47.dll` — the Microsoft compiler DLL redistributed through Mozilla's `fxc2` repository.
+## Troubleshooting
 
-The engine manifest controls the actual files and checksums; selecting a folder does not bypass verification.
+Keep these logs when asking for help:
 
-Setup mounts the drive root as `G:` and the host root as `Z:`. The drive root is the host directory `G:` maps to; the wizard derives it as the parent of the selected executable's containing directory, which for `ModOrganizer.exe` is the parent of the MO2 instance. Review the mapping before creating the wrapper, especially with a custom executable.
+- Setup: `~/Library/Logs/anomaly-setup-tool/<app name>-YYYYMMDD-HHMMSS.log` (with **Save setup log** enabled).
+- Launch: `~/Library/Logs/<app name>/launcher.log`.
 
-After wrapper creation, setup checks the bundled USVFS files against the selected executable's folder. It updates them only if that folder contains `ModOrganizer.exe`. Existing files that differ are backed up inside that folder under `anomaly-setup-tool-backups/usvfs-<timestamp>/` before replacement; matching files are left alone. A custom executable outside a ModOrganizer folder receives no USVFS files.
-
-## Settings, Logs, and Caches
-
-Each wrapper has its own Wine prefix and settings outside the app bundle:
-
-```text
-~/Applications/<app name>.app
-~/Library/Application Support/<app name>/prefix/
-~/Library/Application Support/<app name>/app.env
-```
-
-Setup seeds defaults with no launch arguments. The wrapper saves settings automatically, commits pending edits before launching or closing, and remains open if saving fails. **Reset to Defaults** preserves both executable paths and their working directories.
-
-**Launch options** holds the `ModOrganizer.exe` path and any number of custom `.exe` files. Setup fills in whichever one you chose when creating the wrapper; the ModOrganizer path can be set or cleared there afterwards. **Choose Custom .exe…** adds another custom executable as a row with its own tile name (edit it to rename the tile; empty restores the file name) and a − button that removes it. The pickers accept a readable local `.exe` (the ModOrganizer picker only `ModOrganizer.exe`), using the existing `G:` mapping where possible and `Z:` otherwise. The Anomaly tiles run the Mod Organizer executables titled `Anomaly (DX11)` and `Anomaly (DX11-AVX)`, so those titles must exist in Mod Organizer's executable list. Launch arguments apply to custom executables only and are never passed to Mod Organizer; configure game arguments in Mod Organizer itself. Wine and graphics settings still apply. Changing a path does not modify drive mappings, install runtime files, or update USVFS.
-
-Launch output goes to `~/Library/Logs/<app name>/launcher.log`. The native UI quits after creating the launcher process; later Wine or game failures are recorded in that log. The CLI helper at `Contents/MacOS/launcher` remains available, including explicit argument forwarding.
-
-New wrappers use the setup tool's own `SetupTool.icon` artwork. Both modern appearance assets and an `.icns` fallback are packaged. The green `Anomaly.icon` artwork stays in `sources/AnomalyLauncher/Resources/` but is not used. Existing installed wrappers are not modified.
-
-With **Save setup log** enabled, setup events are written to:
-
-```text
-~/Library/Logs/anomaly-setup-tool/<app name>-YYYYMMDD-HHMMSS.log
-```
-
-Downloads are cached at:
-
-```text
-~/Library/Application Support/anomaly-setup-tool/cache/anomaly-wine-engine/
-~/Library/Application Support/anomaly-setup-tool/cache/redist-installers/
-```
-
-For failed setup, use the detailed log and the GAMMA Discord link in the app.
+Share the relevant log and versions from **About** in the [GAMMA Discord support channel](https://discord.com/channels/912320241713958912/1315449108797980762), also linked inside the app.
 
 ## Build and Test
 
-Building requires full Xcode with Icon Composer-capable `actool`, selected through `xcode-select`; Command Line Tools alone cannot compile `SetupTool.icon`, which is both the app's icon and the wrapper's. From the repository root:
+Building requires full Xcode with Icon Composer support, selected through `xcode-select`. End users do not need Xcode.
 
 ```sh
 ./build.sh
+./test.sh
 ```
 
-This compiles the GUI and backend with `swiftc` for Apple Silicon and macOS 26, builds and ad-hoc signs `dist/Anomaly Setup Tool.app`, then replaces `~/Applications/Anomaly Setup Tool.app` with that build. No Xcode project or sibling engine checkout is required. The build also compiles the native wrapper UI and icon; end users need no compiler or Xcode.
-
-- `./build.sh run` builds and runs the GUI from `dist/` without installing it.
-- `./build.sh install` copies the `dist/` app that `./test.sh` or `./build.sh bundle` just built into `~/Applications` without rebuilding. It refuses a built app that is older than the sources.
-- `./build.sh clean` removes `dist/`.
-- `./test.sh` runs Swift unit tests, backend CLI integration tests, and a build smoke test. The smoke test runs `build.sh bundle`, which builds `dist/` without installing anything.
-
-After every change to the source, run `./test.sh` and then `./build.sh install` (or `./build.sh` alone, which rebuilds and installs) so that `~/Applications/Anomaly Setup Tool.app` is a copy of the current source. `./test.sh` does not install.
-
-Developers can set `ANOMALY_ENGINE_ARTIFACTS_DIR` in the app's environment to prefill the local archive field with the most recently modified `.tar.xz` in that directory.
-
-### Source Layout
-
-| Path | Responsibility |
-| --- | --- |
-| `sources/AnomalySetupTool/` | SwiftUI wizard, setup state, request construction, progress display, and the app's `SetupTool.icon`. |
-| `sources/AnomalyLauncher/` | Native wrapper settings, target picker, launch tiles, and the unused green `Anomaly.icon`. |
-| `sources/AnomalySetupCore/` | Shared models, engine release resolution, checksum verification, wrapper pipeline, and USVFS updates. |
-| `sources/AnomalySetupEngine/` | `anomaly-setup-engine` CLI backend, called by the GUI through `create-wine-engine`. |
-| `sources/AnomalySetupTool/Resources/wine-engine/interactive_setup.py` | Canonical wrapper-creation script, bundled by `build.sh`. |
-| `tests/` | Swift unit tests and shell CLI integration tests. |
-
-`Package.swift` defines the wizard, setup backend, and `AnomalyLauncher` executable products. `build.sh` assembles the distributable app bundle and its backend and resources.
-
-### Launcher resources and engine compatibility
-
-`build.sh bundle` creates `dist/Anomaly Setup Tool.app/Contents/Resources/launcher/`
-with `AnomalyLauncher`, `SetupTool.icns`, `Assets.car`, `icon-info.plist`, and the launch tile icons `mo2.icns`, `anomalyexes.icns`, and `custom.icns` (compiled from `sources/AnomalyLauncher/Resources/*.icon`).
-The setup backend passes this directory to `interactive_setup.py` through
-`--launcher-resources`; direct script callers must supply it too. Missing or
-invalid resources fail before wrapper or prefix changes. Run the bundle build
-before using the development CLI from SwiftPM.
-
-The UI and icon come from setup-tool, not the engine archive. Engine archives
-with or without the former `share/anomaly/Configurator.app` are accepted, subject
-to the existing runtime requirements. Older setup-tool builds still require that
-former archive layout; ship updated setup-tool support before publishing engines
-without Configurator. No engine-version gate has been added.
+`./build.sh` builds, ad-hoc signs, and installs the app into `~/Applications`. `./test.sh` runs automated tests and a build smoke check without installing. Run `./build.sh` after changes to keep the installed app current.
