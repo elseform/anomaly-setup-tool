@@ -40,6 +40,7 @@ let schema: [SchemaEntry] = [
     SchemaEntry(key: "MTL_HUD_ENABLED", kind: .bool, alwaysOn: true, quoted: false, defaultValue: "0"),
     SchemaEntry(key: "WINEDEBUG", kind: .text, alwaysOn: true, quoted: true, defaultValue: "-all"),
 
+    // Not shown: the launcher sets it from the startup arguments of the executable it starts.
     SchemaEntry(key: "DEFAULT_GAME_ARGS", kind: .text, alwaysOn: true, quoted: true, defaultValue: ""),
 
     SchemaEntry(key: "DXMT_METALFX_SPATIAL_SWAPCHAIN", kind: .bool, alwaysOn: true, quoted: false, defaultValue: "0"),
@@ -111,7 +112,7 @@ let dxmtConfigKeys: [DXMTConfigEntry] = [
 // Not rendered as GUI fields; carried through every regeneration as opaque
 // strings. EXE_PATH/EXE_RUN_DIR are what the launch helper runs, written by the
 // Configurator right before each launch. The ANOMALY_MO2_* pair is the Mod
-// Organizer path the user sets in Launch options; the ANOMALY_CUSTOM_EXE_* lines
+// Organizer path the user sets in Executables; the ANOMALY_CUSTOM_EXE_* lines
 // are the custom executable list (CustomExecutableStore).
 let passthroughKeys = [
     "EXE_PATH", "EXE_RUN_DIR",
@@ -136,7 +137,6 @@ let friendlyLabels: [String: String] = [
     "WINEESYNC": "Esync",
     "ROSETTA_ADVERTISE_AVX": "Advertise AVX Under Rosetta",
     "WINEDEBUG": "Wine Debug Channels",
-    "DEFAULT_GAME_ARGS": "Launch Arguments",
     "ANOMALY_RETINA_MODE": "Retina Resolution",
     "ANOMALY_RETINA_LOGPIXELS": "Retina DPI Override",
 
@@ -177,7 +177,6 @@ let friendlyDescriptions: [String: String] = [
     "WINEESYNC": "Fallback thread synchronization in Wine. Turn off only to troubleshoot.",
     "ROSETTA_ADVERTISE_AVX": "Tells the game the CPU supports AVX under Rosetta.",
     "WINEDEBUG": "Which Wine debug messages are logged. \"-all\" logs none.",
-    "DEFAULT_GAME_ARGS": "Extra arguments passed to the program the wrapper launches.",
     "ANOMALY_RETINA_MODE": "Lets the game use your display's full Retina resolution.",
     "ANOMALY_RETINA_LOGPIXELS": "Windows DPI to use in Retina mode.",
 
@@ -235,7 +234,7 @@ enum SidebarSection {
 
 enum SettingCategory: String, CaseIterable, Identifiable {
     case play
-    case launchOptions
+    case executables
     case frameRate
     case display
     case upscaling
@@ -251,7 +250,7 @@ enum SettingCategory: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .play: "Launch"
-        case .launchOptions: "Launch options"
+        case .executables: "Executables"
         case .frameRate: "Frame Rate & Sync"
         case .display: "Display"
         case .upscaling: "Upscaling"
@@ -267,7 +266,7 @@ enum SettingCategory: String, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .play: "play.circle"
-        case .launchOptions: "slider.horizontal.3"
+        case .executables: "slider.horizontal.3"
         case .frameRate: "speedometer"
         case .display: "display"
         case .upscaling: "arrow.up.left.and.arrow.down.right"
@@ -284,7 +283,7 @@ enum SettingCategory: String, CaseIterable, Identifiable {
     var sidebarSection: SidebarSection {
         switch self {
         case .play: .home
-        case .launchOptions, .frameRate, .display, .upscaling: .game
+        case .executables, .frameRate, .display, .upscaling: .game
         case .about: .info
         default: .advanced
         }
@@ -293,10 +292,8 @@ enum SettingCategory: String, CaseIterable, Identifiable {
     /// Sections of the category's page, in window order.
     var groups: [SettingGroup] {
         switch self {
-        case .launchOptions:
-            [SettingGroup(title: "Launch options", settings: [
-                .env("DEFAULT_GAME_ARGS"),
-            ])]
+        case .executables:
+            []
         case .frameRate:
             [SettingGroup(title: "Frame Rate & Sync", settings: [
                 .dxmt("d3d11.displaySync"),

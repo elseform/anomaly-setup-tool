@@ -2,7 +2,7 @@ import Foundation
 
 /// A user-chosen Windows executable that gets its own tile. Stored in app.env
 /// as numbered keys, written in list order with no gaps:
-///   ANOMALY_CUSTOM_EXE_COUNT, ANOMALY_CUSTOM_EXE_<n>_PATH / _RUN_DIR / _NAME
+///   ANOMALY_CUSTOM_EXE_COUNT, ANOMALY_CUSTOM_EXE_<n>_PATH / _RUN_DIR / _NAME / _ARGS
 struct CustomExecutable: Identifiable, Equatable {
     /// Lives only in memory, so a rename or removal never changes another row's identity.
     let id: UUID
@@ -10,12 +10,15 @@ struct CustomExecutable: Identifiable, Equatable {
     var name: String
     var path: String
     var runDirectory: String
+    /// Startup arguments for this executable alone.
+    var arguments: String
 
-    init(id: UUID = UUID(), name: String = "", path: String, runDirectory: String) {
+    init(id: UUID = UUID(), name: String = "", path: String, runDirectory: String, arguments: String = "") {
         self.id = id
         self.name = name
         self.path = path
         self.runDirectory = runDirectory
+        self.arguments = arguments
     }
 
     var defaultName: String { Self.defaultName(forPath: path) }
@@ -44,8 +47,9 @@ enum CustomExecutableStore {
 
     static func key(_ index: Int, _ field: String) -> String { "\(prefix)\(index)_\(field)" }
 
-    /// The numbered entries, in order. Entries without a path are dropped.
-    static func load(from passthrough: [String: String]) -> [CustomExecutable] {
+    /// The numbered entries, in order. Entries without a path are dropped. An
+    /// entry saved before each had its own arguments takes `defaultArguments`.
+    static func load(from passthrough: [String: String], defaultArguments: String = "") -> [CustomExecutable] {
         let count = Int(unquote(passthrough[countKey] ?? "")) ?? 0
         guard count > 0 else { return [] }
         return (1...count).compactMap { index in
@@ -54,7 +58,8 @@ enum CustomExecutableStore {
             return CustomExecutable(
                 name: unquote(passthrough[key(index, "NAME")] ?? ""),
                 path: path,
-                runDirectory: unquote(passthrough[key(index, "RUN_DIR")] ?? "")
+                runDirectory: unquote(passthrough[key(index, "RUN_DIR")] ?? ""),
+                arguments: passthrough[key(index, "ARGS")].map(unquote) ?? defaultArguments
             )
         }
     }
@@ -68,6 +73,7 @@ enum CustomExecutableStore {
             passthrough[key(index, "PATH")] = shellQuote(executable.path)
             passthrough[key(index, "RUN_DIR")] = shellQuote(executable.runDirectory)
             passthrough[key(index, "NAME")] = shellQuote(executable.name)
+            passthrough[key(index, "ARGS")] = shellQuote(executable.arguments)
         }
     }
 }
