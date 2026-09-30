@@ -39,6 +39,24 @@ do {
     case "create-wine-engine":
         let request = try loadWineEngineRequest(from: arguments)
         let wineEngineSetup = WineEngineSetup(executablePath: CommandLine.arguments[0], reporter: reporter)
+        // The GUI interrupts the engine when the user quits mid-setup. Forward
+        // it to interactive_setup.py so it cleans up its partial wrapper; with
+        // no script running yet there is nothing to clean up. Handled on a
+        // global queue because the main thread blocks while the script runs.
+        var signalSources: [DispatchSourceSignal] = []
+        for number in [SIGINT, SIGTERM] {
+            signal(number, SIG_IGN)
+            let source = DispatchSource.makeSignalSource(signal: number, queue: .global())
+            source.setEventHandler {
+                if !wineEngineSetup.interruptSetupScript() {
+                    reporter.completed(success: false, message: "Interrupted")
+                    exit(130)
+                }
+            }
+            source.resume()
+            signalSources.append(source)
+        }
+        defer { signalSources.forEach { $0.cancel() } }
         try await wineEngineSetup.create(request: request)
         reporter.completed(success: true, message: "Setup complete.")
     case "-h", "--help":
