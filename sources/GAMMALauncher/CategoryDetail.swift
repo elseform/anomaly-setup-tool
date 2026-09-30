@@ -11,10 +11,10 @@ struct CategoryDetail: View {
     private var isLocked: Bool { !model.canEdit || launcher.isLaunching }
 
     var body: some View {
-        if category == .about {
-            AboutView(install: model.install)
-        } else {
-            settingsForm
+        switch category {
+        case .play: LaunchGridView(model: model, launcher: launcher)
+        case .about: AboutView(install: model.install)
+        default: settingsForm
         }
     }
 
@@ -29,8 +29,9 @@ struct CategoryDetail: View {
             Group {
                 ForEach(category.groups, id: \.title) { group in
                     Section {
-                        if category == .launch {
-                            executableRow
+                        if category == .launchOptions {
+                            pathRow("ModOrganizer.exe", slot: .modOrganizer)
+                            pathRow("Custom .exe", slot: .custom)
                         }
                         ForEach(group.settings, id: \.self) { setting in
                             SettingRow(model: model, setting: setting)
@@ -38,8 +39,8 @@ struct CategoryDetail: View {
                     } header: {
                         Text(group.title)
                     } footer: {
-                        if category == .launch && model.isModOrganizer {
-                            Text("Game launch arguments are configured in Mod Organizer. Press Run there to start the game.")
+                        if category == .launchOptions {
+                            Text("Launch arguments apply to the custom .exe only. Game arguments for ModOrganizer are set in Mod Organizer.")
                         } else if let help = group.help {
                             Text(help)
                         }
@@ -52,22 +53,27 @@ struct CategoryDetail: View {
         .formStyle(.grouped)
     }
 
-    private var executableRow: some View {
-        LabeledContent("Executable") {
-            Text(model.targetPath.isEmpty ? "Choose an executable" : model.targetPath)
+    private func pathRow(_ title: String, slot: LaunchSlot) -> some View {
+        let path = model.path(for: slot)
+        return LabeledContent(title) {
+            Text(path.isEmpty ? "Not set" : path)
+                .foregroundStyle(path.isEmpty ? .secondary : .primary)
                 .lineLimit(2).truncationMode(.middle).textSelection(.enabled)
-            Button("Choose…", action: chooseTarget)
+            Button("Choose…") { chooseTarget(slot) }
+            if !path.isEmpty {
+                Button("Clear") { model.clearTarget(slot) }
+            }
         }
     }
 
-    private func chooseTarget() {
+    private func chooseTarget(_ slot: LaunchSlot) {
         let panel = NSOpenPanel()
         panel.canChooseDirectories = false
         panel.allowsMultipleSelection = false
         panel.allowedContentTypes = [UTType(filenameExtension: "exe") ?? .data]
-        panel.message = "Choose the Windows executable this wrapper launches."
+        panel.message = slot == .modOrganizer ? "Choose ModOrganizer.exe." : "Choose the Windows executable to launch."
         panel.begin { response in
-            if response == .OK, let url = panel.url { model.selectTarget(url) }
+            if response == .OK, let url = panel.url { model.selectTarget(url, slot: slot) }
         }
     }
 }

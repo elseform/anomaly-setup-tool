@@ -21,7 +21,7 @@ Extract the downloaded setup-tool archive and open `GAMMA Setup Tool.app`, or [b
 2. The app name is filled in from the selected executable (`ModOrganizer` for `ModOrganizer.exe`), with `-2`, `-3`, and so on added if an app of that name already exists in `~/Applications`. Change it if you like, then click **Continue**.
 3. On **Options**, the engine is downloaded automatically; expand **Use a local engine file** to choose a local `.tar.xz` archive instead. Optionally expand **Windows components** to see which Microsoft runtime files are already present or choose a folder containing downloaded copies. **Advanced** holds the drive mappings and **Save a setup log**; leave the log enabled for troubleshooting.
 4. Click **Create wrapper**.
-5. Open the created app from Finder. Adjust settings or choose another Windows executable, then press **Launch**. The settings window quits after handing off to the launch process. With Mod Organizer selected, press **Run** there to start the game.
+5. Open the created app from Finder. It opens on a grid of launch tiles: **ModOrganizer**, **Anomaly - DX11** and **Anomaly - DX11 (AVX)** (Mod Organizer shortcuts) while a ModOrganizer.exe path is set, and a tile for the custom executable while that path is set. Click a tile to launch it; the window quits after handing off to the launch process. Adjust settings, or set either path, from the sidebar first.
 
 Setup checks the selected executable exists; it does not validate the contents or health of the G.A.M.M.A. installation.
 
@@ -57,9 +57,9 @@ Each wrapper has its own Wine prefix and settings outside the app bundle:
 ~/Library/Application Support/<app name>/app.env
 ```
 
-Setup seeds defaults with no launch arguments. The wrapper saves settings automatically, commits pending edits before Launch or closing, and remains open if saving fails. **Reset to Defaults** preserves the selected executable and working directory.
+Setup seeds defaults with no launch arguments. The wrapper saves settings automatically, commits pending edits before launching or closing, and remains open if saving fails. **Reset to Defaults** preserves both executable paths and their working directories.
 
-The executable picker accepts any readable local `.exe`, using the existing `G:` mapping where possible and `Z:` otherwise. Choosing `ModOrganizer.exe` disables game launch arguments without deleting them; these defaults are not passed to Mod Organizer. Wine and graphics settings still apply. Configure game arguments in Mod Organizer itself. Changing the target does not modify drive mappings, install runtime files, or update USVFS.
+**Launch options** holds two paths: `ModOrganizer.exe` and a custom `.exe`. Setup fills in whichever one you chose when creating the wrapper; the other can be set there afterwards, and either can be cleared. The pickers accept a readable local `.exe` (the ModOrganizer picker only `ModOrganizer.exe`), using the existing `G:` mapping where possible and `Z:` otherwise. The Anomaly tiles run the Mod Organizer executables titled `Anomaly (DX11)` and `Anomaly (DX11-AVX)`, so those titles must exist in Mod Organizer's executable list. Launch arguments apply to the custom executable only and are never passed to Mod Organizer; configure game arguments in Mod Organizer itself. Wine and graphics settings still apply. Changing a path does not modify drive mappings, install runtime files, or update USVFS.
 
 Launch output goes to `~/Library/Logs/<app name>/launcher.log`. The native UI quits after creating the launcher process; later Wine or game failures are recorded in that log. The CLI helper at `Contents/MacOS/launcher` remains available, including explicit argument forwarding.
 

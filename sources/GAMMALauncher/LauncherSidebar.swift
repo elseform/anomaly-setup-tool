@@ -8,6 +8,7 @@ struct LauncherSidebar: View {
 
     var body: some View {
         List(selection: Binding<SettingCategory?>(get: { selection }, set: { if let category = $0 { selection = category } })) {
+            section(nil, .home)
             section("Game", .game)
             section("Advanced", .advanced)
             section(nil, .info)

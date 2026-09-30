@@ -13,6 +13,7 @@ final class ConfiguratorModel {
     private(set) var revision = 0
     @ObservationIgnored let configFile: String
     @ObservationIgnored let loadError: String?
+    @ObservationIgnored private var migratedSlots = false
 
     init(install: InstallLayout = .current()) {
         self.install = install
@@ -21,6 +22,7 @@ final class ConfiguratorModel {
             configFile = paths.configFile
             loadError = nil
             state = loadState(configFile: paths.configFile, legacyStateFile: paths.stateFile)
+            migrateLaunchSlots()
         } else {
             prefixURL = nil
             configFile = ""
@@ -32,6 +34,7 @@ final class ConfiguratorModel {
             state.vars["GAMMA_GRAPHICS_BACKEND"] = VarEntry(enabled: true, value: "dxmt")
             persist()
         }
+        if migratedSlots { persist() }
     }
 
     var canEdit: Bool {
@@ -99,17 +102,55 @@ final class ConfiguratorModel {
         if save { persist() }
     }
 
-    var targetPath: String { unquote(state.passthrough["EXE_PATH"] ?? "") }
-    var isModOrganizer: Bool { LaunchTarget.isModOrganizer(targetPath) }
+    /// Wrappers made before the two-path split hold only EXE_PATH, the target
+    /// picked at creation. It becomes the Mod Organizer path or the custom path
+    /// by its file name, so the choice made at creation is kept.
+    private func migrateLaunchSlots() {
+        let slotKeys = [LaunchSlot.modOrganizer, .custom].flatMap { [$0.pathKey, $0.runDirKey] }
+        guard !slotKeys.contains(where: { state.passthrough[$0] != nil }),
+              let path = state.passthrough["EXE_PATH"], !unquote(path).isEmpty else { return }
+        let slot: LaunchSlot = LaunchTarget.isModOrganizer(unquote(path)) ? .modOrganizer : .custom
+        state.passthrough[slot.pathKey] = path
+        state.passthrough[slot.runDirKey] = state.passthrough["EXE_RUN_DIR"]
+        migratedSlots = true
+    }
 
-    func selectTarget(_ url: URL) {
+    func path(for slot: LaunchSlot) -> String { unquote(state.passthrough[slot.pathKey] ?? "") }
+
+    func runDirectory(for slot: LaunchSlot) -> String { unquote(state.passthrough[slot.runDirKey] ?? "") }
+
+    /// The launch grid: Mod Organizer and its Anomaly shortcuts while that path
+    /// is set, then the custom executable while that path is set.
+    var launchEntries: [LaunchEntry] {
+        var entries: [LaunchEntry] = []
+        if !path(for: .modOrganizer).isEmpty { entries += [.modOrganizer, .anomalyDX11, .anomalyDX11AVX] }
+        if !path(for: .custom).isEmpty { entries.append(.custom(path: path(for: .custom))) }
+        return entries
+    }
+
+    func selectTarget(_ url: URL, slot: LaunchSlot) {
         do {
             guard let prefixURL else { throw LauncherError.message("Wine prefix location is missing.") }
             let target = try LaunchTarget.select(url, prefix: prefixURL)
-            state.passthrough["EXE_PATH"] = shellQuote(target.windowsPath)
-            state.passthrough["EXE_RUN_DIR"] = shellQuote(target.directory.path)
+            if slot == .modOrganizer, !LaunchTarget.isModOrganizer(target.windowsPath) {
+                throw LauncherError.message("Choose ModOrganizer.exe.")
+            }
+            state.passthrough[slot.pathKey] = shellQuote(target.windowsPath)
+            state.passthrough[slot.runDirKey] = shellQuote(target.directory.path)
             persist()
         } catch { saveError = error.localizedDescription }
+    }
+
+    func clearTarget(_ slot: LaunchSlot) {
+        state.passthrough[slot.pathKey] = shellQuote("")
+        state.passthrough[slot.runDirKey] = shellQuote("")
+        persist()
+    }
+
+    /// Makes the slot's executable the one the launch helper runs.
+    func activate(_ slot: LaunchSlot) {
+        state.passthrough["EXE_PATH"] = state.passthrough[slot.pathKey]
+        state.passthrough["EXE_RUN_DIR"] = state.passthrough[slot.runDirKey]
     }
 
     @discardableResult

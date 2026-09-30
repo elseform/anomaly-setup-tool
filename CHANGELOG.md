@@ -4,6 +4,11 @@
 
 ### Main improvements
 
+- The wrapper window opens on a grid of launch tiles instead of a single Launch button: ModOrganizer and two
+  Mod Organizer shortcuts (Anomaly - DX11, Anomaly - DX11 (AVX)) while a ModOrganizer.exe path is set, and
+  the custom executable while that path is set. **Launch options** now holds both paths; setup fills in the
+  one chosen at creation and existing wrappers keep their target. Launch arguments apply to the custom
+  executable only. The window title no longer shows the wrapper's name, and the bottom-bar Launch button is gone.
 - Replaced the Sikarugir wrapper pipeline with the `gamma-wine-engine` engine archive
   (CrossOver 26.3 / Wine 11 with DXMT), driven by this tool's own
   `interactive_setup.py`. The wizard no longer installs Homebrew casks or resolves
