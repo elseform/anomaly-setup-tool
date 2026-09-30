@@ -32,6 +32,10 @@ final class AppModel {
     @ObservationIgnored var pendingEngineOutput = Data()
     @ObservationIgnored var pendingLogText = ""
     @ObservationIgnored var logFlushScheduled = false
+    /// The running `anomaly-setup-engine`, so quitting mid-setup can stop it.
+    @ObservationIgnored var engineProcess: Process?
+    /// Called once when the engine process has exited and its output is handled.
+    @ObservationIgnored var engineDidExit: (() -> Void)?
 
     /// Whether setup uses `wineEngineArchivePath` instead of downloading the
     /// newest published engine release.

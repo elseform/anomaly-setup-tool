@@ -79,6 +79,7 @@ extension AppModel {
             try? FileManager.default.removeItem(at: requestURL)
             throw error
         }
+        engineProcess = process
 
         return await withCheckedContinuation { continuation in
             let reader = pipe.fileHandleForReading
@@ -96,11 +97,19 @@ extension AppModel {
                 DispatchQueue.main.async {
                     MainActor.assumeIsolated {
                         self.finishEngineOutput()
+                        self.engineProcess = nil
                         continuation.resume(returning: status)
+                        self.engineDidExit?()
                     }
                 }
             }
         }
+    }
+
+    /// Asks the engine to stop. It forwards the interrupt to the setup script,
+    /// which removes its partial wrapper; `engineDidExit` fires once it is gone.
+    func interruptEngine() {
+        engineProcess?.interrupt()
     }
 
     // MARK: - Event Handling
