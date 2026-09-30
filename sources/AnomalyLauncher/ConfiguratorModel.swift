@@ -142,6 +142,10 @@ final class ConfiguratorModel {
 
     var modOrganizerRunDirectory: String { unquote(state.passthrough[Self.modOrganizerRunDirKey] ?? "") }
 
+    var modOrganizerMacPath: String? {
+        LaunchTarget.macPath(windowsPath: modOrganizerPath, runDirectory: modOrganizerRunDirectory)
+    }
+
     /// The saved path and working directory a tile starts.
     func target(for source: LaunchSource) -> (path: String, runDirectory: String) {
         switch source {
