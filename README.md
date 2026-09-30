@@ -7,6 +7,8 @@ The tool does not install Anomaly or GAMMA. You need an installation already on 
 
 **[Download Anomaly Setup Tool](https://github.com/elseform/anomaly-setup-tool/releases)** — extract the archive and open `Anomaly Setup Tool.app`. Check the release notes when using an older build.
 
+THIS SHADER PACK IS REQUIRED TO BE INSTALLED FOR DXMT TO WORK PROPERLY: https://github.com/elseform/gamma-mods/tree/master/Metal-compatible%20Shaders
+
 ## Requirements
 
 - An Apple Silicon Mac running macOS 26 or newer, with Rosetta 2 installed.
