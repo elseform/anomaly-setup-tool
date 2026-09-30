@@ -43,7 +43,7 @@ The engine archive supplies the runtime manifest and fetcher. Setup obtains the 
 
 The engine manifest controls the actual files and checksums; selecting a folder does not bypass verification.
 
-Setup mounts the game root as `G:` and the host root as `Z:`. The wizard derives the game root as the parent of the selected executable's containing directory; review the mapping before creating the wrapper, especially with a custom executable.
+Setup mounts the drive root as `G:` and the host root as `Z:`. The drive root is the host directory `G:` maps to; the wizard derives it as the parent of the selected executable's containing directory, which for `ModOrganizer.exe` is the parent of the MO2 instance. Review the mapping before creating the wrapper, especially with a custom executable.
 
 After wrapper creation, setup checks the bundled USVFS files against the selected executable's folder. It updates them only if that folder contains `ModOrganizer.exe`. Existing files that differ are backed up inside that folder under `anomaly-setup-tool-backups/usvfs-<timestamp>/` before replacement; matching files are left alone. A custom executable outside a ModOrganizer folder receives no USVFS files.
 

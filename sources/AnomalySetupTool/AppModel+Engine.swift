@@ -10,7 +10,7 @@ extension AppModel {
     // MARK: - Request Construction
 
     /// The launch target is the selected executable (ModOrganizer.exe by
-    /// default). `installRoot`, mounted as G:, is two directory levels above
+    /// default). `driveRoot`, mounted as G:, is two directory levels above
     /// it — MO2's own folder, then that folder's parent — so the
     /// `gamePath=G:\\anomaly`-style paths stored in `ModOrganizer.ini`
     /// resolve. Some installs store `Z:` paths instead; interactive_setup.py
@@ -19,7 +19,7 @@ extension AppModel {
     /// rather than resolving it against its working directory.
     func wineEngineRequest() -> WineEngineSetupRequest {
         let mo2URL = URL(fileURLWithPath: selectedLaunchExecutablePath)
-        let installRoot = selectedLaunchExecutableFound
+        let driveRoot = selectedLaunchExecutableFound
             ? mo2URL.deletingLastPathComponent().deletingLastPathComponent().standardizedFileURL.path
             : ""
         return WineEngineSetupRequest(
@@ -27,7 +27,7 @@ extension AppModel {
                 ? nil : wineEngineArchivePath,
             appName: appName,
             appParent: installDirectory,
-            installRoot: installRoot,
+            driveRoot: driveRoot,
             mo2Path: selectedLaunchExecutablePath,
             exeRelPath: nil,
             yes: true,

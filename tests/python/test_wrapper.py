@@ -50,7 +50,7 @@ class WrapperTests(unittest.TestCase):
         return setup.build_arg_parser().parse_args([
             "--yes", "--archive", str(archive), "--launcher-resources", str(RESOURCES),
             "--app-name", "Anomaly Test", "--app-parent", str(self.root / "apps"),
-            "--install-root", str(self.game), "--exe-rel-path", "ModOrganizer.exe"])
+            "--drive-root", str(self.game), "--exe-rel-path", "ModOrganizer.exe"])
 
     def assemble(self, legacy=False):
         args = self.args(self.archive(legacy))
