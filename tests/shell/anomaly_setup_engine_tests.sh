@@ -65,7 +65,7 @@ write_request() {
   "archivePath" : "$archive_path",
   "appName" : "anomaly-cli-${TMP_ROOT##*/}",
   "appParent" : "$TMP_ROOT/apps",
-  "installRoot" : "$TMP_ROOT/stage/Anomaly",
+  "driveRoot" : "$TMP_ROOT/stage/Anomaly",
   "mo2Path" : "$mo2_path",
   "yes" : true,
   "skipFinderAlias" : true,
@@ -142,13 +142,13 @@ expect_failure "no launch target" "$TMP_ROOT/no-mo2.out" "$TMP_ROOT/no-mo2.err" 
   -- create-wine-engine --request-file "$TMP_ROOT/no-mo2.json"
 assert_contains "$TMP_ROOT/no-mo2.err" "mo2Path is required when exeRelPath is not explicitly overridden"
 
-printf '==> CLI rejects an mo2Path outside installRoot\n'
+printf '==> CLI rejects an mo2Path outside driveRoot\n'
 mkdir -p "$TMP_ROOT/elsewhere"
 touch "$TMP_ROOT/elsewhere/ModOrganizer.exe"
 write_request "$TMP_ROOT/outside.json" "$TMP_ROOT/present.tar.xz" "$TMP_ROOT/elsewhere/ModOrganizer.exe"
-expect_failure "mo2 outside installRoot" "$TMP_ROOT/outside.out" "$TMP_ROOT/outside.err" \
+expect_failure "mo2 outside driveRoot" "$TMP_ROOT/outside.out" "$TMP_ROOT/outside.err" \
   -- create-wine-engine --request-file "$TMP_ROOT/outside.json"
-assert_contains "$TMP_ROOT/outside.err" "is not inside installRoot"
+assert_contains "$TMP_ROOT/outside.err" "is not inside driveRoot"
 
 printf '==> CLI forwards packaged launcher resources to the wrapper script\n'
 mkdir -p "$TMP_ROOT/stage/Anomaly"

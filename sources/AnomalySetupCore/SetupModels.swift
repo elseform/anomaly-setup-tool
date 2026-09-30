@@ -60,7 +60,7 @@ public struct WineEngineSetupRequest: Codable {
     public var archivePath: String?
     public var appName: String
     public var appParent: String
-    public var installRoot: String
+    public var driveRoot: String
     public var mo2Path: String
     public var exeRelPath: String?
     public var yes: Bool
@@ -81,7 +81,7 @@ public struct WineEngineSetupRequest: Codable {
         archivePath: String? = nil,
         appName: String = "Anomaly",
         appParent: String = NSString(string: "~/Applications").expandingTildeInPath,
-        installRoot: String = "",
+        driveRoot: String = "",
         mo2Path: String = "",
         exeRelPath: String? = nil,
         yes: Bool = true,
@@ -95,7 +95,7 @@ public struct WineEngineSetupRequest: Codable {
         self.archivePath = archivePath
         self.appName = appName
         self.appParent = appParent
-        self.installRoot = installRoot
+        self.driveRoot = driveRoot
         self.mo2Path = mo2Path
         self.exeRelPath = exeRelPath
         self.yes = yes

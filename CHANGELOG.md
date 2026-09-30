@@ -14,6 +14,9 @@
   Wrappers created by earlier versions keep running with their own launcher and engine copy; create new
   ones with this version. The MO2 location saved by the wizard starts empty, because settings moved to the
   new `anomaly-setup-tool` folder.
+- The setup engine's mount option is now `--drive-root` (JSON key `driveRoot`, formerly `--install-root` /
+  `installRoot`): the host directory that `G:` maps to. It is the parent of the MO2 instance, and no folder
+  name is assumed for either. The interactive wizard's default executable path is `bin/AnomalyDX11.exe`.
 - The wrapper window opens on a grid of launch tiles instead of a single Launch button: ModOrganizer and two
   Mod Organizer shortcuts (Anomaly - DX11, Anomaly - DX11 (AVX)) while a ModOrganizer.exe path is set, and
   the custom executable while that path is set. **Launch options** now holds both paths; setup fills in the

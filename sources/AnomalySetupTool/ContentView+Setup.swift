@@ -177,7 +177,7 @@ struct SetupPage: View {
 
     @ViewBuilder
     private var driveMappingControls: some View {
-        LabeledContent("Game root (G:)") {
+        LabeledContent("Drive root (G:)") {
             Text(model.configuration.optionalGDriveRoot)
                 .textSelection(.enabled)
         }
