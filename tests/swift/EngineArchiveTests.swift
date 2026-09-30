@@ -113,6 +113,15 @@ final class EngineArchiveTests {
         XCTAssertEqual(resolved.archiveName, "CX26-W11-ANOMALY-14.tar.xz")
     }
 
+    func testResolvesAReleaseWithoutASha256Asset() throws {
+        let release = GitHubRelease(tagName: "engine-cx26-w11-anomaly-14", assets: [
+            GitHubReleaseAsset(name: "CX26-W11-ANOMALY-14.tar.xz", browserDownloadURL: "https://example.invalid/a"),
+            GitHubReleaseAsset(name: "CX26-W11-ANOMALY-14.tar.xz.manifest.json", browserDownloadURL: "https://example.invalid/m"),
+        ])
+        let resolved = try EngineReleaseResolver.newestEngineRelease(in: [release])
+        XCTAssertEqual(resolved.manifestURL.absoluteString, "https://example.invalid/m")
+    }
+
     func testThrowsWhenNoEngineReleaseExists() {
         XCTAssertThrows(try EngineReleaseResolver.newestEngineRelease(in: [GitHubRelease(tagName: "v0.86", assets: [])]))
     }
