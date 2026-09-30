@@ -19,12 +19,14 @@ MODE="${1:-build}"
 
 # build:  build dist/, sign it, and install it into ~/Applications
 # bundle: build and sign dist/ only (what test.sh uses; installs nothing)
+# install: copy the dist/ app that `bundle` (or test.sh) just built into
+#          ~/Applications without rebuilding; refuses a bundle older than the sources
 # run:    build dist/ and run the app binary directly
 case "$MODE" in
-  build|bundle|run|clean)
+  build|bundle|install|run|clean)
     ;;
   *)
-    printf 'Usage: %s [build|bundle|run|clean]\n' "$(basename "$0")" >&2
+    printf 'Usage: %s [build|bundle|install|run|clean]\n' "$(basename "$0")" >&2
     exit 2
     ;;
 esac
@@ -32,6 +34,25 @@ esac
 if [[ "$MODE" == "clean" ]]; then
   rm -rf "$BUILD_DIR"
   printf 'Removed %s\n' "$BUILD_DIR"
+  exit 0
+fi
+
+INSTALL_DIR="$HOME/Applications"
+
+if [[ "$MODE" == "install" ]]; then
+  if [[ ! -x "$BINARY" ]]; then
+    printf 'No built app at %s; run ./test.sh or ./build.sh bundle first.\n' "$APP_DIR" >&2
+    exit 1
+  fi
+  newer_source="$(find "$ROOT_DIR/sources" "$ROOT_DIR/build.sh" -type f -newer "$BINARY" -print -quit)"
+  if [[ -n "$newer_source" ]]; then
+    printf 'The built app is older than %s; run ./test.sh or ./build.sh bundle first.\n' "$newer_source" >&2
+    exit 1
+  fi
+  mkdir -p "$INSTALL_DIR"
+  rm -rf "$INSTALL_DIR/Anomaly Setup Tool.app"
+  cp -R "$APP_DIR" "$INSTALL_DIR/Anomaly Setup Tool.app"
+  printf '%s\n' "$INSTALL_DIR/Anomaly Setup Tool.app"
   exit 0
 fi
 
@@ -142,8 +163,6 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
 PLIST
 
 perl -0pi -e "s/APP_VERSION_PLACEHOLDER/$APP_VERSION/g" "$CONTENTS_DIR/Info.plist"
-
-INSTALL_DIR="$HOME/Applications"
 
 if [[ "$MODE" == "build" || "$MODE" == "bundle" ]]; then
   codesign --force --deep --sign - "$APP_DIR"
