@@ -9,10 +9,14 @@ final class LaunchController {
     private(set) var running: LaunchEntry?
     var isRunning: Bool { running != nil }
     var error: String?
-    /// Starts the helper and calls the last argument once it exits, from any thread.
-    @ObservationIgnored private let spawn: (URL, URL, [String], @escaping @Sendable () -> Void) throws -> Void
+    /// Starts the helper and calls the last argument with its exit status once
+    /// it exits, from any thread.
+    @ObservationIgnored private let spawn: (URL, URL, [String], @escaping @Sendable (Int32) -> Void) throws -> Void
+    /// A helper that fails this soon after starting never reached the program,
+    /// so the failure is shown; later non-zero exits are the program's own.
+    private static let earlyExitSeconds: TimeInterval = 10
 
-    init(spawn: @escaping (URL, URL, [String], @escaping @Sendable () -> Void) throws -> Void = { helper, log, arguments, onExit in
+    init(spawn: @escaping (URL, URL, [String], @escaping @Sendable (Int32) -> Void) throws -> Void = { helper, log, arguments, onExit in
         try LaunchController.startProcess(helper: helper, log: log, arguments: arguments, onExit: onExit)
     }) {
         self.spawn = spawn
@@ -44,9 +48,12 @@ final class LaunchController {
             model.activate(entry.source)
             guard model.persist() else { throw LauncherError.message(model.saveError ?? "Could not save settings.") }
             running = entry
+            let logFile = logs.appendingPathComponent("launcher.log")
+            let started = Date()
             do {
-                try spawn(helper, logs.appendingPathComponent("launcher.log"), entry.arguments) { [weak self] in
-                    Task { @MainActor in self?.running = nil }
+                try spawn(helper, logFile, entry.arguments) { [weak self] status in
+                    let elapsed = Date().timeIntervalSince(started)
+                    Task { @MainActor in self?.finished(entry, status: status, elapsed: elapsed, log: logFile) }
                 }
             } catch {
                 running = nil
@@ -57,8 +64,14 @@ final class LaunchController {
         }
     }
 
+    private func finished(_ entry: LaunchEntry, status: Int32, elapsed: TimeInterval, log: URL) {
+        running = nil
+        guard status != 0, elapsed < Self.earlyExitSeconds else { return }
+        error = "\(entry.label) stopped right after starting (exit status \(status)). See \((log.path as NSString).abbreviatingWithTildeInPath)."
+    }
+
     nonisolated static func startProcess(helper: URL, log: URL, arguments: [String] = [],
-                                         onExit: @escaping @Sendable () -> Void = {}) throws {
+                                         onExit: @escaping @Sendable (Int32) -> Void = { _ in }) throws {
         try FileManager.default.createDirectory(at: log.deletingLastPathComponent(), withIntermediateDirectories: true)
         if !FileManager.default.fileExists(atPath: log.path) {
             guard FileManager.default.createFile(atPath: log.path, contents: nil) else {
@@ -74,7 +87,7 @@ final class LaunchController {
         process.standardInput = FileHandle.nullDevice
         process.standardOutput = output
         process.standardError = output
-        process.terminationHandler = { _ in onExit() }
+        process.terminationHandler = { onExit($0.terminationStatus) }
         try process.run()
     }
 }

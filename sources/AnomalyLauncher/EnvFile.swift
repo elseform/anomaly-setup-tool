@@ -135,6 +135,34 @@ private func shellWord(_ text: Substring) -> String {
     return String(text[..<end])
 }
 
+/// Whether the shell would expand something in this word: an unquoted or
+/// double-quoted `$` or backtick. Single quotes and backslash escapes are literal.
+func expandsInShell(_ word: String) -> Bool {
+    var quote: Character?
+    var escaped = false
+    for character in word {
+        if escaped {
+            escaped = false
+            continue
+        }
+        if character == "\\" && quote != "'" {
+            escaped = true
+            continue
+        }
+        if let open = quote {
+            if character == open {
+                quote = nil
+                continue
+            }
+        } else if character == "'" || character == "\"" {
+            quote = character
+            continue
+        }
+        if quote != "'" && (character == "$" || character == "`") { return true }
+    }
+    return false
+}
+
 struct ParsedEnv {
     var vars: [String: (enabled: Bool, rawValue: String)] = [:]
     var passthrough: [String: String] = [:]
@@ -162,7 +190,14 @@ func parseEnvLines(path: String) -> ParsedEnv {
                 result.foreign.append(stripped)
             }
         } else if schemaByKey[parsed.key] != nil || parsed.key == "DXMT_CONFIG" {
-            result.vars[parsed.key] = (parsed.enabled, parsed.value)
+            // The Configurator reads values literally, so a hand-written line the
+            // shell would expand ("$HOME/logs") is kept verbatim instead of
+            // being rewritten as a different, literal value.
+            if parsed.enabled && expandsInShell(parsed.value) {
+                result.foreign.append(stripped)
+            } else {
+                result.vars[parsed.key] = (parsed.enabled, parsed.value)
+            }
         } else {
             result.foreign.append(stripped)
         }
