@@ -52,6 +52,8 @@ struct LauncherTests {
         let external = try LaunchTarget.select(mo2, prefix: prefix)
         check(external.windowsPath.hasPrefix("Z:\\"), "external target uses Z")
         check(LaunchTarget.isModOrganizer(external.windowsPath), "case-insensitive MO2 detection")
+        check(LaunchTarget.macPath(windowsPath: selected.windowsPath, runDirectory: selected.directory.path) == exe.path, "Mac path is the working directory plus the file name")
+        check(LaunchTarget.macPath(windowsPath: "G:\\a.exe", runDirectory: "") == nil && LaunchTarget.macPath(windowsPath: "", runDirectory: "/tmp") == nil, "no Mac path without both parts")
         check(try LaunchTarget.resolve(selected.windowsPath, prefix: prefix) == exe, "resolve existing target")
         let config = support.appendingPathComponent("app.env")
         try JSONSerialization.data(withJSONObject: ["configFile": config.path, "winePrefix": prefix.path]).write(to: resources.appendingPathComponent("configurator-paths.json"))
