@@ -9,6 +9,7 @@ swiftc -parse-as-library -target arm64-apple-macosx26.0 \
   "$ROOT_DIR/sources/GAMMALauncher/EngineInfo.swift" \
   "$ROOT_DIR/sources/GAMMALauncher/ConfiguratorModel.swift" \
   "$ROOT_DIR/sources/GAMMALauncher/LaunchTarget.swift" \
+  "$ROOT_DIR/sources/GAMMALauncher/LaunchEntry.swift" \
   "$ROOT_DIR/sources/GAMMALauncher/LaunchController.swift" \
   "$ROOT_DIR/sources/GAMMALauncher/LauncherError.swift" \
   "$ROOT_DIR/tests/launcher/LauncherTests.swift" -o "$ROOT_DIR/dist/tests/LauncherTests"

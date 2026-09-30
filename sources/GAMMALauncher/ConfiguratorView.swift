@@ -96,7 +96,7 @@ struct SettingRow: View {
             case .env(let key):
                 if let entry = schemaByKey[key] {
                     SchemaRow(model: model, entry: entry)
-                        .disabled(key == "DEFAULT_GAME_ARGS" && model.isModOrganizer)
+                        .disabled(key == "DEFAULT_GAME_ARGS" && model.path(for: .custom).isEmpty)
                 }
             case .dxmt(let key):
                 if let entry = dxmtConfigByKey[key] {
@@ -110,7 +110,7 @@ struct SettingRow: View {
 struct ConfiguratorView: View {
     let model: ConfiguratorModel
     let launcher: LaunchController
-    @AppStorage("launcherCategory") private var category = SettingCategory.launch
+    @State private var category = SettingCategory.play
     @State private var confirmReset = false
 
     private var isLocked: Bool { !model.canEdit || launcher.isLaunching }
@@ -129,6 +129,9 @@ struct ConfiguratorView: View {
             .background(.bar)
         }
         .frame(minWidth: Layout.minimumWidth, minHeight: Layout.minimumHeight)
+        // The wrapper's name is the executable it was made for, which is
+        // wrong once other tiles launch something else.
+        .toolbar(removing: .title)
     }
 
     private var bottomBar: some View {
@@ -152,10 +155,6 @@ struct ConfiguratorView: View {
             } message: {
                 Text("Every setting, including launch arguments, goes back to what a new wrapper starts with.")
             }
-            Button(launcher.isLaunching ? "Launching…" : "Launch") { launcher.launch(model: model) }
-                .buttonStyle(.borderedProminent)
-                .keyboardShortcut("r", modifiers: .command)
-                .disabled(isLocked)
         }
         .padding()
     }

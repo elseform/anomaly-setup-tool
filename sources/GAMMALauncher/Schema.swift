@@ -108,9 +108,15 @@ let dxmtConfigKeys: [DXMTConfigEntry] = [
     DXMTConfigEntry(key: "dxgi.handleAltTab", kind: .bool, choices: nil, defaultValue: "false"),
 ]
 
-// EXE_PATH/EXE_RUN_DIR are edited together by the target picker, not rendered as
-// GUI fields; carried through every regeneration as opaque strings.
-let passthroughKeys = ["EXE_PATH", "EXE_RUN_DIR"]
+// Not rendered as GUI fields; carried through every regeneration as opaque
+// strings. EXE_PATH/EXE_RUN_DIR are what the launch helper runs, written by the
+// Configurator right before each launch. The GAMMA_MO2_* and GAMMA_CUSTOM_*
+// pairs are the two paths the user sets in Launch options.
+let passthroughKeys = [
+    "EXE_PATH", "EXE_RUN_DIR",
+    "GAMMA_MO2_EXE_PATH", "GAMMA_MO2_EXE_RUN_DIR",
+    "GAMMA_CUSTOM_EXE_PATH", "GAMMA_CUSTOM_EXE_RUN_DIR",
+]
 
 let pointerComment = "# Edit via the wrapper app — see it for descriptions and valid ranges."
 
@@ -220,11 +226,12 @@ struct SettingGroup {
 /// A sidebar entry in the window. Every setting except GAMMA_GRAPHICS_BACKEND
 /// appears in exactly one category.
 enum SidebarSection {
-    case game, advanced, info
+    case home, game, advanced, info
 }
 
 enum SettingCategory: String, CaseIterable, Identifiable {
-    case launch
+    case play
+    case launchOptions
     case frameRate
     case display
     case upscaling
@@ -239,7 +246,8 @@ enum SettingCategory: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .launch: "Launch"
+        case .play: "Launch"
+        case .launchOptions: "Launch options"
         case .frameRate: "Frame Rate & Sync"
         case .display: "Display"
         case .upscaling: "Upscaling"
@@ -254,7 +262,8 @@ enum SettingCategory: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
-        case .launch: "play.circle"
+        case .play: "play.circle"
+        case .launchOptions: "slider.horizontal.3"
         case .frameRate: "speedometer"
         case .display: "display"
         case .upscaling: "arrow.up.left.and.arrow.down.right"
@@ -270,7 +279,8 @@ enum SettingCategory: String, CaseIterable, Identifiable {
     /// The sidebar heading the category is listed under.
     var sidebarSection: SidebarSection {
         switch self {
-        case .launch, .frameRate, .display, .upscaling: .game
+        case .play: .home
+        case .launchOptions, .frameRate, .display, .upscaling: .game
         case .about: .info
         default: .advanced
         }
@@ -279,8 +289,8 @@ enum SettingCategory: String, CaseIterable, Identifiable {
     /// Sections of the category's page, in window order.
     var groups: [SettingGroup] {
         switch self {
-        case .launch:
-            [SettingGroup(title: "Launch", settings: [
+        case .launchOptions:
+            [SettingGroup(title: "Launch options", settings: [
                 .env("DEFAULT_GAME_ARGS"),
             ])]
         case .frameRate:
@@ -337,7 +347,7 @@ enum SettingCategory: String, CaseIterable, Identifiable {
                 .env("WINEESYNC"),
                 .env("ROSETTA_ADVERTISE_AVX"),
             ])]
-        case .about:
+        case .play, .about:
             []
         case .debugging:
             [
