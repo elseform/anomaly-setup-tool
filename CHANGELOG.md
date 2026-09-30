@@ -17,14 +17,9 @@
 - The setup engine's mount option is now `--drive-root` (JSON key `driveRoot`, formerly `--install-root` /
   `installRoot`): the host directory that `G:` maps to. It is the parent of the MO2 instance, and no folder
   name is assumed for either. The interactive wizard's default executable path is `bin/AnomalyDX11.exe`.
-- The wrapper window opens on a grid of launch tiles instead of a single Launch button: ModOrganizer and two
-  Mod Organizer shortcuts (Anomaly - DX11, Anomaly - DX11 (AVX)) while a ModOrganizer.exe path is set, and
-  a second row with one tile per custom executable. **Launch options** holds the ModOrganizer.exe path and
-  any number of custom executables, each with a renamable tile and a − button to remove it; setup fills in
-  the one chosen at creation and existing wrappers keep their target. Launch arguments apply to custom
-  executables only. The tiles use the Icon Composer artwork in `sources/AnomalyLauncher/Resources/`. The window title no longer shows the wrapper's name, and the bottom-bar Launch button is gone.
-- The wrapper window stays open after a launch instead of closing. While the launched program runs, the whole
-  window is greyed out under a "Wrapper is running" message, and it unlocks by itself when that program exits.
+- Added launch tiles for ModOrganizer, Anomaly DX11 / DX11 (AVX), and custom executables.
+  Custom tiles can be renamed or removed; launch arguments apply to custom executables only.
+- The launcher stays open and locks its controls until the launched program exits.
 - New wrappers use the setup tool's icon.
 - Replaced the Sikarugir wrapper pipeline with the `anomaly-wine-engine` engine archive
   (CrossOver 26.3 / Wine 11 with DXMT), driven by this tool's own
@@ -61,38 +56,15 @@
   Samples To Zero. V-Sync starts on Auto, which follows the game's own V-Sync setting.
   Frame Limiter, Preferred Max Frame Rate and the Metal HUD Overlay stay off. Existing apps
   keep their settings.
-- The app's settings add **Frame Limiter** (`DXMT_FRAME_LIMITER`), which paces the game itself to
-  Preferred Max Frame Rate or half the display's refresh rate. Both now sit in Frame Rate &
-  Sync. The limiter needs a DXMT release that includes it.
-- Debugging has a **Metal: Debug** group that gathers the Performance Overlay (moved from
-  Display), the frame capture settings, and new **GPU Frame Capture** (`MTL_CAPTURE_ENABLED`),
-  **Metal API Validation** (`MTL_DEBUG_LAYER`) and **Metal Shader Validation**
-  (`MTL_SHADER_VALIDATION`) switches. Capturing a GPU trace needs GPU Frame Capture on as
-  well as a capture executable, which the window did not offer before; the executable and
-  frame rows appear once capture is on. All three switches start off.
-- The app's settings window is wider and resizable, with a sidebar of categories instead
-  of one long list: Launch, Frame Rate & Sync, Display and Upscaling, then Performance,
-  Rendering Fixes, Compatibility, Wine and Debugging under Advanced. A badge on each
-  category counts the settings changed from what a new app starts with. Reset to
-  Defaults and Launch sit at the bottom of the window.
-- The setup tool's pages now use the same grouped forms, bottom bar and buttons as the app's
-  settings window.
-- The settings window has an About page with the launcher version, which always matches the
-  Anomaly Setup Tool that built the app, and the engine and DXMT versions bundled in it. The
-  footer links to the GitHub repository and the GAMMA Discord.
-
-- The wizard opens on a welcome page where you select `ModOrganizer.exe` (or another
-  executable) and then name the app on the same page. The name is filled in from the
-  executable, with `-2`, `-3`, ... added when that app already exists. The separate review
-  step is gone: **Create wrapper** starts setup from the options page, which lists what setup
-  will do. Engine file,
-  drive-mapping, and log options are collapsed, and wording throughout uses plain
-  language instead of wrapper and engine terms.
-- The name and options pages say whether ModOrganizer's `usvfs` files will be updated,
-  are already up to date, or are left alone; the finish page reports what was done.
-- The finish page lists next steps: where the app is, how it starts the game, and where
-  its Configurator is.
-- The support link is now labeled **GAMMA Discord**.
+- Added **Frame Limiter** (`DXMT_FRAME_LIMITER`) with a preferred frame rate or half-refresh-rate
+  target. Requires a DXMT release that supports it.
+- Added GPU frame capture, Metal API validation, and Metal shader validation controls, all off
+  by default. Frame capture also requires a capture executable.
+- Reorganized settings into a resizable window with sidebar categories and changed-setting badges.
+- Added an About page showing launcher, engine, and DXMT versions, with GitHub and GAMMA Discord links.
+- Simplified the setup wizard with grouped forms, automatic app naming, and executable selection
+  on the welcome page. **Create wrapper** starts setup from the options page.
+- Setup shows whether ModOrganizer's USVFS files need updating and reports the result on completion.
 
 ### Removals
 
