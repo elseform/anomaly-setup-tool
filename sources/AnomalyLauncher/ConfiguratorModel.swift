@@ -43,13 +43,14 @@ final class ConfiguratorModel {
         loadError == nil
     }
 
-    /// Puts every setting back to what a new install starts with. Launcher
-    /// paths (passthrough keys) and lines the Configurator doesn't own are
-    /// kept.
+    /// Puts every setting back to what a new install starts with, startup
+    /// arguments included. Executable paths, tile names and lines the
+    /// Configurator doesn't own are kept.
     func resetToDefaults() {
         let defaults = defaultState()
         state.vars = defaults.vars
         state.dxmtConfig = defaults.dxmtConfig
+        for index in customExecutables.indices { customExecutables[index].arguments = "" }
         revision += 1
         persist()
     }
@@ -114,11 +115,13 @@ final class ConfiguratorModel {
     /// kept. ANOMALY_CUSTOM_EXE_COUNT marks a file already in the current format.
     private func loadExecutables() {
         let passthrough = state.passthrough
-        customExecutables = CustomExecutableStore.load(from: passthrough)
+        // Before each executable had its own arguments, one DEFAULT_GAME_ARGS applied to all.
+        let inheritedArguments = state.vars["DEFAULT_GAME_ARGS"]?.value ?? ""
+        customExecutables = CustomExecutableStore.load(from: passthrough, defaultArguments: inheritedArguments)
         let legacyKeys = [CustomExecutableStore.legacyPathKey, CustomExecutableStore.legacyRunDirKey]
         let hasLegacyCustom = legacyKeys.contains { passthrough[$0] != nil }
         if let path = passthrough[CustomExecutableStore.legacyPathKey].map(unquote), !path.isEmpty {
-            customExecutables.insert(CustomExecutable(path: path, runDirectory: unquote(passthrough[CustomExecutableStore.legacyRunDirKey] ?? "")), at: 0)
+            customExecutables.insert(CustomExecutable(path: path, runDirectory: unquote(passthrough[CustomExecutableStore.legacyRunDirKey] ?? ""), arguments: inheritedArguments), at: 0)
         }
         for key in legacyKeys { state.passthrough[key] = nil }
         let isCurrent = passthrough[CustomExecutableStore.countKey] != nil
@@ -131,7 +134,7 @@ final class ConfiguratorModel {
             state.passthrough[Self.modOrganizerPathKey] = passthrough["EXE_PATH"]
             state.passthrough[Self.modOrganizerRunDirKey] = runDirectory
         } else {
-            customExecutables.append(CustomExecutable(path: path, runDirectory: unquote(runDirectory)))
+            customExecutables.append(CustomExecutable(path: path, runDirectory: unquote(runDirectory), arguments: inheritedArguments))
         }
     }
 
@@ -196,16 +199,27 @@ final class ConfiguratorModel {
         if save { persist() }
     }
 
+    func setCustomArguments(_ id: UUID, _ arguments: String, save: Bool = true) {
+        guard let index = customExecutables.firstIndex(where: { $0.id == id }) else { return }
+        customExecutables[index].arguments = arguments
+        if save { persist() }
+    }
+
     private func resolveTarget(_ url: URL) throws -> LaunchTarget {
         guard let prefixURL else { throw LauncherError.message("Wine prefix location is missing.") }
         return try LaunchTarget.select(url, prefix: prefixURL)
     }
 
-    /// Makes the tile's executable the one the launch helper runs.
+    /// Makes the tile's executable, with its startup arguments, the one the
+    /// launch helper runs. The helper reads DEFAULT_GAME_ARGS and ignores it
+    /// for Mod Organizer.
     func activate(_ source: LaunchSource) {
         let target = target(for: source)
         state.passthrough["EXE_PATH"] = shellQuote(target.path)
         state.passthrough["EXE_RUN_DIR"] = shellQuote(target.runDirectory)
+        var arguments = ""
+        if case .custom(let id) = source { arguments = customExecutables.first { $0.id == id }?.arguments ?? "" }
+        state.vars["DEFAULT_GAME_ARGS"] = VarEntry(enabled: true, value: arguments)
     }
 
     @discardableResult

@@ -14,12 +14,12 @@ struct LauncherTests {
         let literals = ["G:\\A B\\O'Brien.exe", "quotes \" $HOME `id` $(id) \\ end", "", "semi;colon", "Unicode Ж"]
         for value in literals { check(unquote(shellQuote(value)) == value, "shell literal round trip: \(value)") }
         let shown = SettingCategory.allCases.flatMap(\.groups).flatMap(\.settings).map(\.key)
-        let expected = schema.map(\.key).filter { $0 != "ANOMALY_GRAPHICS_BACKEND" } + dxmtConfigKeys.map(\.key)
+        let expected = schema.map(\.key).filter { $0 != "ANOMALY_GRAPHICS_BACKEND" && $0 != "DEFAULT_GAME_ARGS" } + dxmtConfigKeys.map(\.key)
         check(shown.count == Set(shown).count, "every setting is listed once")
         check(Set(shown) == Set(expected), "every setting has a category")
         check(SettingCategory.about.groups.isEmpty && SettingCategory.about.sidebarSection == .info, "About lists no settings")
         check(SettingCategory.play.groups.isEmpty && SettingCategory.play.sidebarSection == .home, "launch grid lists no settings")
-        check(SettingCategory.allCases.first == .play && SettingCategory.launchOptions.title == "Launch options", "grid comes first")
+        check(SettingCategory.allCases.first == .play && SettingCategory.executables.title == "Executables", "grid comes first")
         let manifest = #"{"versionLabel":"CX26-W11-ANOMALY","buildNumber":19,"engineId":"cx26-w11-anomaly","base":{"crossover":"26.3.0","wine":"11.16"},"dxmt":{"tag":"anomaly-2026.09.27.1","commit":"fc8c94702375f19f5161fc970a251aecdfc5d4de"}}"#
         let info = try JSONDecoder().decode(EngineInfo.self, from: Data(manifest.utf8))
         check(info.versionLabel == "CX26-W11-ANOMALY" && info.buildNumber == 19, "engine label and build")
@@ -70,6 +70,10 @@ struct LauncherTests {
         check(oldCustom.customEntries.map(\.label) == ["Tool"] && oldCustom.customExecutables[0].runDirectory == "/tmp/tools", "single custom path becomes the first custom executable")
         let migrated = try String(contentsOf: config, encoding: .utf8)
         check(!migrated.contains("ANOMALY_CUSTOM_EXE_PATH") && migrated.contains("ANOMALY_CUSTOM_EXE_1_PATH='G:\\tools\\Tool.exe'") && migrated.contains("ANOMALY_CUSTOM_EXE_COUNT='1'"), "single custom path rewritten as a numbered entry")
+        try "export DEFAULT_GAME_ARGS='-old'\nexport ANOMALY_CUSTOM_EXE_COUNT='2'\nexport ANOMALY_CUSTOM_EXE_1_PATH='G:\\a.exe'\nexport ANOMALY_CUSTOM_EXE_2_PATH='G:\\b.exe'\nexport ANOMALY_CUSTOM_EXE_2_ARGS='-own'\n".write(to: config, atomically: true, encoding: .utf8)
+        check(ConfiguratorModel(install: InstallLayout(wrapperURL: wrapper)).customExecutables.map(\.arguments) == ["-old", "-own"], "executables saved before per-executable arguments inherit the old value")
+        try "export ANOMALY_CUSTOM_EXE_PATH='G:\\tools\\Tool.exe'\nexport ANOMALY_CUSTOM_EXE_RUN_DIR='/tmp/tools'\nexport ANOMALY_MO2_EXE_PATH=''\nexport DEFAULT_GAME_ARGS='-old'\n".write(to: config, atomically: true, encoding: .utf8)
+        check(ConfiguratorModel(install: InstallLayout(wrapperURL: wrapper)).customExecutables.map(\.arguments) == ["-old"], "single custom path inherits the old arguments")
         try "export DXMT_CONFIG=\"d3d11.sampleNaNToZero=true;\"\n".write(to: config, atomically: true, encoding: .utf8)
         let model = ConfiguratorModel(install: InstallLayout(wrapperURL: wrapper))
         check(model.launchEntries.isEmpty, "no paths, no tiles")
@@ -91,7 +95,7 @@ struct LauncherTests {
         check(model.launchEntries.map(\.kind) == [.modOrganizer, .anomalyDX11, .anomalyDX11AVX, .custom], "both paths show all tiles, custom last")
         check(model.launchEntries.last?.label == "O'Brien", "custom tile is named after the executable")
         check(model.launchEntries[1].arguments == ["moshortcut://Anomaly (DX11)"] && model.launchEntries[2].arguments == ["moshortcut://Anomaly (DX11-AVX)"], "Anomaly tiles are MO2 shortcuts")
-        check(model.state.vars["DEFAULT_GAME_ARGS"]?.value == "-dbg", "paths keep args")
+        check(model.state.vars["DEFAULT_GAME_ARGS"]?.value == "-dbg", "paths keep the active arguments")
         model.clearModOrganizer()
         check(model.launchEntries.map(\.kind) == [.custom] && loadState(configFile: config.path).passthrough["ANOMALY_MO2_EXE_PATH"] == "''", "clearing MO2 hides its tiles and stays cleared")
         model.selectModOrganizer(mo2)
@@ -102,6 +106,16 @@ struct LauncherTests {
         model.addCustomExecutable(second)
         check(model.customEntries.map(\.label) == ["O'Brien", "Second"], "each custom executable gets a tile")
         let secondID = model.customExecutables[1].id
+        model.setCustomArguments(model.customExecutables[0].id, "-a")
+        model.setCustomArguments(secondID, "-b")
+        check(ConfiguratorModel(install: InstallLayout(wrapperURL: wrapper)).customExecutables.map(\.arguments) == ["-a", "-b"], "startup arguments saved per executable")
+        model.activate(.custom(secondID))
+        check(model.state.vars["DEFAULT_GAME_ARGS"]?.value == "-b", "starting an executable makes its arguments the active ones")
+        model.activate(.modOrganizer)
+        check(model.state.vars["DEFAULT_GAME_ARGS"]?.value == "", "Mod Organizer starts without arguments")
+        model.resetToDefaults()
+        check(model.customExecutables.map(\.arguments) == ["", ""] && model.customExecutables.count == 2, "reset clears startup arguments and keeps the executables")
+        model.setCustomArguments(secondID, "-b")
         model.setCustomName(secondID, "  My Tool ")
         check(model.customEntries.map(\.label) == ["O'Brien", "My Tool"], "rename changes the tile label")
         let reloaded = ConfiguratorModel(install: InstallLayout(wrapperURL: wrapper))
@@ -134,13 +148,13 @@ struct LauncherTests {
         var finish: (@Sendable () -> Void)?
         let launcher = LaunchController(spawn: { _, _, arguments, onExit in
             let saved = loadState(configFile: config.path)
-            check(saved.vars["DEFAULT_GAME_ARGS"]?.value == "-pending", "flush before launch")
+            check(saved.vars["DEFAULT_GAME_ARGS"]?.value == "-pending", "flush before launch, arguments of the started executable")
             check(unquote(saved.passthrough["EXE_PATH"] ?? "") == selected.windowsPath, "custom launch activates the custom path")
             spawned.append(arguments)
             starts += 1
             finish = onExit
         })
-        model.setVar("DEFAULT_GAME_ARGS", enabled: true, value: "-pending", save: false)
+        model.setCustomArguments(model.customExecutables[0].id, "-pending", save: false)
         launcher.launch(customEntry, model: model)
         launcher.launch(customEntry, model: model)
         check(starts == 1 && spawned == [[]], "single launch without arguments")
