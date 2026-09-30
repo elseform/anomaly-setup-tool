@@ -2,8 +2,8 @@ import Foundation
 
 /// The subset of GitHub's release API this tool reads. Matches what
 /// `anomaly-wine-engine/scripts/publish-release.sh` actually publishes: a tag
-/// `engine-<engineId>-<N>`, with the archive, its `.sha256` and its
-/// `.manifest.json` as assets.
+/// `engine-<engineId>-<N>`, with the archive and its `.manifest.json` (which
+/// carries the checksum) among its assets.
 public struct GitHubReleaseAsset: Codable, Equatable {
     public var name: String
     public var browserDownloadURL: String
@@ -40,7 +40,6 @@ public struct ResolvedEngineRelease: Equatable {
     public let version: EngineBuildVersion
     public let archiveName: String
     public let archiveURL: URL
-    public let sha256URL: URL
     public let manifestURL: URL
 }
 
@@ -53,7 +52,7 @@ public enum EngineReleaseResolverError: Error, CustomStringConvertible, Localize
         switch self {
         case .network(let message): return "could not reach GitHub: \(message)"
         case .noEngineReleases: return "no engine-* release found in elseform/anomaly-wine-engine"
-        case .malformedRelease(let tag): return "release \(tag) is missing its archive, .sha256 or .manifest.json asset"
+        case .malformedRelease(let tag): return "release \(tag) is missing its archive or .manifest.json asset"
         }
     }
 
@@ -115,10 +114,8 @@ public enum EngineReleaseResolver {
         guard let archive = release.assets.first(where: { $0.name.hasSuffix(".tar.xz") }) else {
             throw EngineReleaseResolverError.malformedRelease(release.tagName)
         }
-        guard let sha256 = release.assets.first(where: { $0.name == archive.name + ".sha256" }),
-              let manifest = release.assets.first(where: { $0.name == archive.name + ".manifest.json" }),
+        guard let manifest = release.assets.first(where: { $0.name == archive.name + ".manifest.json" }),
               let archiveURL = URL(string: archive.browserDownloadURL),
-              let sha256URL = URL(string: sha256.browserDownloadURL),
               let manifestURL = URL(string: manifest.browserDownloadURL) else {
             throw EngineReleaseResolverError.malformedRelease(release.tagName)
         }
@@ -137,7 +134,6 @@ public enum EngineReleaseResolver {
             version: version,
             archiveName: archive.name,
             archiveURL: archiveURL,
-            sha256URL: sha256URL,
             manifestURL: manifestURL
         )
     }

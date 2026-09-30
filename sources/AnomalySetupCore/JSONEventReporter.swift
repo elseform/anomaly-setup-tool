@@ -1,7 +1,10 @@
 import Foundation
 
-public final class JSONEventReporter {
+/// Safe to call from any thread: events come from the main flow, the script
+/// output reader and URLSession's delegate queue, and lines must not interleave.
+public final class JSONEventReporter: @unchecked Sendable {
     private let encoder = JSONEncoder()
+    private let lock = NSLock()
     private var logURL: URL?
     private let streamEvents: Bool
 
@@ -11,7 +14,9 @@ public final class JSONEventReporter {
     }
 
     public func attachLog(_ url: URL) throws {
+        lock.lock()
         logURL = url
+        lock.unlock()
         try "anomaly-setup-engine log\nStarted: \(Date())\n\n".write(to: url, atomically: true, encoding: .utf8)
         emit(.init(type: .artifact, message: "Log file", path: url.path))
     }
@@ -45,6 +50,8 @@ public final class JSONEventReporter {
     }
 
     private func emit(_ event: SetupEngineEvent) {
+        lock.lock()
+        defer { lock.unlock() }
         guard let data = try? encoder.encode(event),
               let text = String(data: data, encoding: .utf8) else {
             return
