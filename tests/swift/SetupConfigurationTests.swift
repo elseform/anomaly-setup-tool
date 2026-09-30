@@ -2,15 +2,15 @@ import Foundation
 
 final class SetupConfigurationTests {
     func testOutputAppPathAddsAppSuffix() {
-        let config = SetupConfiguration(appName: "stalker-anomaly", installDirectory: "/tmp/GAMMA")
+        let config = SetupConfiguration(appName: "stalker-anomaly", installDirectory: "/tmp/Anomaly")
 
-        XCTAssertEqual(config.outputAppPath, "/tmp/GAMMA/stalker-anomaly.app")
+        XCTAssertEqual(config.outputAppPath, "/tmp/Anomaly/stalker-anomaly.app")
     }
 
     func testOutputAppPathDoesNotDuplicateAppSuffix() {
-        let config = SetupConfiguration(appName: "  stalker-anomaly.app  ", installDirectory: "/tmp/GAMMA")
+        let config = SetupConfiguration(appName: "  stalker-anomaly.app  ", installDirectory: "/tmp/Anomaly")
 
-        XCTAssertEqual(config.outputAppPath, "/tmp/GAMMA/stalker-anomaly.app")
+        XCTAssertEqual(config.outputAppPath, "/tmp/Anomaly/stalker-anomaly.app")
     }
 
     func testDefaultOutputAppPathUsesApplicationsFolder() {
@@ -22,11 +22,11 @@ final class SetupConfigurationTests {
     }
 
     func testWrapperNameValidationRejectsUnsafeNames() {
-        XCTAssertTrue(SetupConfiguration.isValidWrapperName("GAMMA"))
-        XCTAssertTrue(SetupConfiguration.isValidWrapperName("GAMMA.app"))
+        XCTAssertTrue(SetupConfiguration.isValidWrapperName("Anomaly"))
+        XCTAssertTrue(SetupConfiguration.isValidWrapperName("Anomaly.app"))
         XCTAssertFalse(SetupConfiguration.isValidWrapperName(""))
-        XCTAssertFalse(SetupConfiguration.isValidWrapperName("../GAMMA"))
-        XCTAssertFalse(SetupConfiguration.isValidWrapperName("GAMMA:Test"))
+        XCTAssertFalse(SetupConfiguration.isValidWrapperName("../Anomaly"))
+        XCTAssertFalse(SetupConfiguration.isValidWrapperName("Anomaly:Test"))
     }
 
     /// `manualModOrganizerPath` is the only MO2 source, and the file has to
@@ -82,7 +82,7 @@ final class SetupConfigurationTests {
         let temp = try makeTempDir("anomaly-drive-mapping")
         defer { try? FileManager.default.removeItem(at: temp) }
         let gamesRoot = temp.appendingPathComponent("Games", isDirectory: true)
-        let gammaRoot = gamesRoot.appendingPathComponent("GAMMA", isDirectory: true)
+        let gammaRoot = gamesRoot.appendingPathComponent("Anomaly", isDirectory: true)
         try FileManager.default.createDirectory(at: gammaRoot, withIntermediateDirectories: true)
         let mo2 = gammaRoot.appendingPathComponent("ModOrganizer.exe")
         FileManager.default.createFile(atPath: mo2.path, contents: Data())

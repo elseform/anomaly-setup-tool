@@ -38,7 +38,7 @@ extension ContentView {
         case .welcome:
             return (
                 "Welcome",
-                "You need an existing GAMMA installation to continue."
+                "You need an existing Anomaly installation to continue."
             )
         case .setup:
             return (
