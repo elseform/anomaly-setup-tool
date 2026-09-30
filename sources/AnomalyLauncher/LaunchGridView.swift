@@ -22,7 +22,7 @@ struct LaunchGridView: View {
                     ContentUnavailableView(
                         "Nothing to launch",
                         systemImage: "play.slash",
-                        description: Text("Set ModOrganizer.exe or a custom .exe in Launch options.")
+                        description: Text("Set ModOrganizer.exe or a custom .exe in Executables.")
                     )
                 } else {
                     grid(modOrganizerEntries)

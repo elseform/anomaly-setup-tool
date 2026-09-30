@@ -17,8 +17,10 @@
 - The setup engine's mount option is now `--drive-root` (JSON key `driveRoot`, formerly `--install-root` /
   `installRoot`): the host directory that `G:` maps to. It is the parent of the MO2 instance, and no folder
   name is assumed for either. The interactive wizard's default executable path is `bin/AnomalyDX11.exe`.
-- Added launch tiles for ModOrganizer, Anomaly DX11 / DX11 (AVX), and custom executables.
-  Custom tiles can be renamed or removed; launch arguments apply to custom executables only.
+- Added launch tiles for ModOrganizer, Anomaly DX11 / DX11 (AVX), and custom executables. Under
+  **Executables** any number of custom executables can be added, each with a renamable tile, its own startup
+  arguments, and a − button to remove it. Startup arguments are never passed to Mod Organizer.
+- **Reset to Defaults…** moved to **About**.
 - The launcher stays open and locks its controls until the launched program exits.
 - New wrappers use the setup tool's icon.
 - Replaced the Sikarugir wrapper pipeline with the `anomaly-wine-engine` engine archive
