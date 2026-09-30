@@ -18,7 +18,6 @@ struct SetupPage: View {
     var body: some View {
         let ready = model.selectedLaunchExecutableFound && !model.isRunning
         Form {
-            summary
             Group {
                 engineArchiveControls
                 redistInstallerControls
@@ -28,43 +27,10 @@ struct SetupPage: View {
             .opacity(ready ? 1 : 0.45)
         }
         .pageForm()
-        .task(id: model.selectedLaunchExecutablePath) {
-            model.refreshUSVFSPlan()
-        }
     }
 
     private func isOpen(_ panel: Panel) -> Binding<Bool> {
         Binding(get: { openPanel == panel }, set: { openPanel = $0 ? panel : nil })
-    }
-
-    // MARK: - Summary
-
-    private var summary: some View {
-        Section {
-            Label {
-                Text("Create **\(model.outputAppName)** in ~/Applications")
-            } icon: {
-                Image(systemName: "app.badge.checkmark")
-                    .foregroundStyle(.tint)
-            }
-            Label {
-                Text(model.wineEngineArchivePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                     ? "Download the latest wine engine"
-                     : "Use the local wine engine archive")
-            } icon: {
-                Image(systemName: "arrow.down.circle")
-                    .foregroundStyle(.tint)
-            }
-            Label {
-                Text("Set up the wrapper for \(model.selectedLaunchExecutableLabel)")
-            } icon: {
-                Image(systemName: "play.circle")
-                    .foregroundStyle(.tint)
-            }
-            USVFSStatusRow(outcome: model.usvfsPlan)
-        } header: {
-            Text("What setup will do")
-        }
     }
 
     // MARK: - Engine archive

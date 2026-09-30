@@ -25,12 +25,10 @@ struct WelcomePage: View {
             if model.selectedLaunchExecutableFound {
                 appNameSection
             }
+            SetupSummarySection(model: model)
         }
         .pageForm()
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: model.selectedLaunchExecutableFound)
-        .task(id: model.selectedLaunchExecutablePath) {
-            model.refreshUSVFSPlan()
-        }
         .onChange(of: model.selectedLaunchExecutableFound) { _, found in
             appNameIsFocused = found
         }
@@ -44,7 +42,7 @@ struct WelcomePage: View {
                 .buttonStyle(.borderedProminent)
                 .help("Pick ModOrganizer.exe, or another Windows program to launch instead")
         } label: {
-            RowLabel(title: "Select ModOrganizer location", detail: "Choose ModOrganizer.exe in your Anomaly folder.")
+            Text("Select ModOrganizer’s executable file")
         }
     }
 
@@ -60,7 +58,6 @@ struct WelcomePage: View {
                 detailIsPath: true
             )
         }
-        USVFSStatusRow(outcome: model.usvfsPlan)
     }
 
     // MARK: - App Name

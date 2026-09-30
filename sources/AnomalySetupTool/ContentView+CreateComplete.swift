@@ -21,6 +21,7 @@ struct CreatePage: View {
 
             Section {
                 installStages
+                USVFSStatusRow(outcome: model.usvfsPlanForRun)
             }
 
             if model.installFailed {
