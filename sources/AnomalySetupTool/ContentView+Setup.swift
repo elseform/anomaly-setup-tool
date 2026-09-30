@@ -69,34 +69,33 @@ struct SetupPage: View {
             }
             .pickerStyle(.radioGroup)
             .labelsHidden()
-            ForEach(redistInstallerStatuses, id: \.installer.filename) { status in
-                Label {
-                    LabeledContent(status.installer.title) {
-                        Text(status.isPresent
-                             ? "Found locally; verified during setup"
-                             : "Will be downloaded (\(status.installer.sizeLabel))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                } icon: {
-                    Image(systemName: status.isPresent ? "checkmark.circle.fill" : "arrow.down.circle")
-                        .foregroundStyle(status.isPresent ? SetupStatusTone.success.color : .secondary)
-                }
-                .accessibilityElement(children: .combine)
-            }
             if model.usesLocalInstallers {
                 HStack(spacing: 8) {
-                    TextField("Downloaded installers folder",
+                    TextField("Installers folder",
                               text: $model.redistInstallerDirectory,
-                              prompt: Text("Folder with downloaded installers"))
-                        .accessibilityLabel("Downloaded installers folder")
+                              prompt: Text("Path to a folder with downloaded installers"))
+                        .accessibilityLabel("Installers folder")
                     Button("Choose…") {
                         model.chooseRedistInstallerDirectory()
                     }
-                    .accessibilityLabel("Choose downloaded installers folder")
+                    .accessibilityLabel("Choose installers folder")
+                }
+                ForEach(redistInstallerStatuses, id: \.installer.filename) { status in
+                    Label {
+                        LabeledContent(status.installer.title) {
+                            Text(status.isPresent
+                                 ? "Found locally; verified during setup"
+                                 : "Will be downloaded (\(status.installer.sizeLabel))")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: status.isPresent ? "checkmark.circle.fill" : "arrow.down.circle")
+                            .foregroundStyle(status.isPresent ? SetupStatusTone.success.color : .secondary)
+                    }
+                    .accessibilityElement(children: .combine)
                 }
             }
-            SectionNote("Setup verifies every file against the engine’s required checksum. Missing files are downloaded automatically.")
         } header: {
             Text("Dependencies")
         }
