@@ -112,11 +112,11 @@ extension AppModel {
         }
     }
 
-    /// Names the app after the launch executable ("ModOrganizer" for
-    /// ModOrganizer.exe). An app of that name already in the install folder
-    /// gets "-2", "-3", ... appended.
+    /// Names the app "Anomaly" for ModOrganizer.exe and after the executable
+    /// for any other launch executable. An app of that name already in the
+    /// install folder gets "-2", "-3", ... appended.
     func suggestAppName() {
-        let base = URL(fileURLWithPath: selectedLaunchExecutablePath).deletingPathExtension().lastPathComponent
+        let base = SetupConfiguration.defaultAppName(forLaunchExecutable: selectedLaunchExecutablePath)
         let installURL = URL(fileURLWithPath: installDirectory)
         func exists(_ name: String) -> Bool {
             FileManager.default.fileExists(atPath: installURL.appendingPathComponent("\(name).app").path)

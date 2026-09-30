@@ -21,6 +21,15 @@ final class SetupConfigurationTests {
         XCTAssertEqual(SetupConfiguration().outputAppPath, expected)
     }
 
+    func testDefaultAppNameIsAnomalyForModOrganizer() {
+        XCTAssertEqual(SetupConfiguration.defaultAppName(forLaunchExecutable: "ModOrganizer.exe"), "Anomaly")
+        XCTAssertEqual(SetupConfiguration.defaultAppName(forLaunchExecutable: "/G/mo2/modorganizer.EXE"), "Anomaly")
+    }
+
+    func testDefaultAppNameFollowsACustomExecutable() {
+        XCTAssertEqual(SetupConfiguration.defaultAppName(forLaunchExecutable: "/G/bin/AnomalyDX11.exe"), "AnomalyDX11")
+    }
+
     func testWrapperNameValidationRejectsUnsafeNames() {
         XCTAssertTrue(SetupConfiguration.isValidWrapperName("Anomaly"))
         XCTAssertTrue(SetupConfiguration.isValidWrapperName("Anomaly.app"))

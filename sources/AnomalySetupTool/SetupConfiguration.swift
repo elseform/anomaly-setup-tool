@@ -28,6 +28,13 @@ struct SetupConfiguration {
         return trimmed.rangeOfCharacter(from: CharacterSet(charactersIn: "/:")) == nil
     }
 
+    /// The wrapper name suggested for a launch executable: "Anomaly" for
+    /// ModOrganizer.exe, otherwise the executable's own name.
+    static func defaultAppName(forLaunchExecutable path: String) -> String {
+        let stem = URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
+        return stem.caseInsensitiveCompare("ModOrganizer") == .orderedSame ? "Anomaly" : stem
+    }
+
     var usesCustomLaunchExecutable: Bool {
         customLaunchExecutablePath != nil
     }
