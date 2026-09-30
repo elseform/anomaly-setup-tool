@@ -99,7 +99,7 @@ public final class WineEngineSetup {
             "--archive", archiveURL.path,
             "--app-name", request.appName,
             "--app-parent", (request.appParent as NSString).expandingTildeInPath,
-            "--gamma-root", (request.gammaRoot as NSString).expandingTildeInPath,
+            "--install-root", (request.installRoot as NSString).expandingTildeInPath,
             "--exe-rel-path", exeRelPath,
         ]
         // The engine archive carries both the manifest and the fetcher, so
@@ -235,13 +235,13 @@ public final class WineEngineSetup {
     /// MO2 is the primary/default launch target — not the raw game exe
     /// interactive_setup.py itself defaults to. `mo2Path` (the selected
     /// launch executable, ModOrganizer.exe or a custom one) is expressed
-    /// relative to `gammaRoot` and used as the exe-rel-path unless the
+    /// relative to `installRoot` and used as the exe-rel-path unless the
     /// request supplies an explicit `exeRelPath`.
     private func resolveExeRelPath(request: WineEngineSetupRequest) throws -> String {
         // An empty path would silently resolve to this process's working
         // directory.
-        guard !request.gammaRoot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            throw WineEngineSetupError.message("gammaRoot is required")
+        guard !request.installRoot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw WineEngineSetupError.message("installRoot is required")
         }
         if let override = request.exeRelPath, !override.isEmpty {
             return override
@@ -251,20 +251,20 @@ public final class WineEngineSetup {
                 "mo2Path is required when exeRelPath is not explicitly overridden"
             )
         }
-        let gammaRootURL = URL(fileURLWithPath: (request.gammaRoot as NSString).expandingTildeInPath)
+        let installRootURL = URL(fileURLWithPath: (request.installRoot as NSString).expandingTildeInPath)
             .resolvingSymlinksInPath()
         let mo2URL = URL(fileURLWithPath: (request.mo2Path as NSString).expandingTildeInPath)
             .resolvingSymlinksInPath()
-        let gammaComponents = gammaRootURL.pathComponents
+        let installComponents = installRootURL.pathComponents
         let mo2Components = mo2URL.pathComponents
-        guard mo2Components.count > gammaComponents.count,
-              Array(mo2Components.prefix(gammaComponents.count)) == gammaComponents else {
+        guard mo2Components.count > installComponents.count,
+              Array(mo2Components.prefix(installComponents.count)) == installComponents else {
             throw WineEngineSetupError.message(
-                "mo2Path (\(mo2URL.path)) is not inside gammaRoot (\(gammaRootURL.path)); "
+                "mo2Path (\(mo2URL.path)) is not inside installRoot (\(installRootURL.path)); "
                 + "pass an explicit exeRelPath override instead"
             )
         }
-        return mo2Components[gammaComponents.count...].joined(separator: "/")
+        return mo2Components[installComponents.count...].joined(separator: "/")
     }
 
     private func resolvePython3() throws -> String {

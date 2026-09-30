@@ -18,20 +18,20 @@ final class AppSettingsStoreTests {
     }
 
     /// The store now round-trips a whole `AppSettings`; the old
-    /// `save(gammaPath:to:)` / `loadManualModOrganizerPath(from:)` pair and the
+    /// `save(mo2Path:to:)` / `loadManualModOrganizerPath(from:)` pair and the
     /// folder-scan helper are gone — the app takes an explicit ModOrganizer.exe
     /// through NSOpenPanel instead.
-    func testAppSettingsSaveAndLoadRoundTripsGammaPath() throws {
+    func testAppSettingsSaveAndLoadRoundTripsMO2Path() throws {
         let temp = try makeTempDir("anomaly-settings-save")
         defer { try? FileManager.default.removeItem(at: temp) }
         let settingsURL = temp.appendingPathComponent("settings/settings.json")
         let mo2 = temp.appendingPathComponent("Anomaly/ModOrganizer.exe")
 
-        try AppSettingsStore.save(settings: AppSettings(gammaPath: mo2.path), to: settingsURL)
+        try AppSettingsStore.save(settings: AppSettings(mo2Path: mo2.path), to: settingsURL)
 
         // save() creates the intermediate directory itself.
         XCTAssertTrue(FileManager.default.fileExists(atPath: settingsURL.path))
-        XCTAssertEqual(AppSettingsStore.loadSettings(from: settingsURL).gammaPath, mo2.path)
+        XCTAssertEqual(AppSettingsStore.loadSettings(from: settingsURL).mo2Path, mo2.path)
     }
 
     func testAppSettingsLoadIgnoresMissingAndMalformedFiles() throws {
@@ -54,19 +54,19 @@ final class AppSettingsStoreTests {
         XCTAssertFalse(FileManager.default.fileExists(atPath: settingsURL.path))
         AppSettingsStore.ensureSettingsFileExists(at: settingsURL)
         XCTAssertTrue(FileManager.default.fileExists(atPath: settingsURL.path))
-        XCTAssertNil(AppSettingsStore.loadSettings(from: settingsURL).gammaPath)
+        XCTAssertNil(AppSettingsStore.loadSettings(from: settingsURL).mo2Path)
     }
 
     func testEnsureSettingsFileExistsDoesNotOverwriteAnExistingFile() throws {
         let temp = try makeTempDir("anomaly-settings-preserve")
         defer { try? FileManager.default.removeItem(at: temp) }
         let settingsURL = temp.appendingPathComponent("settings.json")
-        try AppSettingsStore.save(settings: AppSettings(gammaPath: "/Games/Anomaly/ModOrganizer.exe"), to: settingsURL)
+        try AppSettingsStore.save(settings: AppSettings(mo2Path: "/Games/Anomaly/ModOrganizer.exe"), to: settingsURL)
 
         AppSettingsStore.ensureSettingsFileExists(at: settingsURL)
 
         XCTAssertEqual(
-            AppSettingsStore.loadSettings(from: settingsURL).gammaPath,
+            AppSettingsStore.loadSettings(from: settingsURL).mo2Path,
             "/Games/Anomaly/ModOrganizer.exe"
         )
     }

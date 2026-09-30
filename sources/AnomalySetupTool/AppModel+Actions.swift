@@ -16,8 +16,8 @@ extension AppModel {
     func loadSettings() {
         AppSettingsStore.ensureSettingsFileExists(at: settingsURL)
         let settings = AppSettingsStore.loadSettings(from: settingsURL)
-        if let gammaPath = settings.gammaPath?.trimmingCharacters(in: .whitespacesAndNewlines), !gammaPath.isEmpty {
-            manualModOrganizerPath = URL(fileURLWithPath: gammaPath).appendingPathComponent("ModOrganizer.exe").path
+        if let mo2Path = settings.mo2Path?.trimmingCharacters(in: .whitespacesAndNewlines), !mo2Path.isEmpty {
+            manualModOrganizerPath = URL(fileURLWithPath: mo2Path).appendingPathComponent("ModOrganizer.exe").path
         }
         if wineEngineArchivePath.isEmpty, let detected = Self.devArchiveFromEnvironment() {
             wineEngineArchivePath = detected

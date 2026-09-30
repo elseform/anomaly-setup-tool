@@ -560,7 +560,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--archive", help="Path to the engine archive (.tar.xz).")
     parser.add_argument("--app-name", help="Name for the .app bundle (without .app).")
     parser.add_argument("--app-parent", help="Directory to place the .app in.")
-    parser.add_argument("--gamma-root", help="Path to game root (G: drive).")
+    parser.add_argument("--install-root", help="Path to game root (G: drive).")
     parser.add_argument("--exe-rel-path", help="Path to the .exe, relative to game root.")
     parser.add_argument("--redist-cache-dir",
                          help=f"Where to cache the redistributable installers (default: {DEFAULT_REDIST_CACHE}).")
@@ -645,25 +645,25 @@ def run_setup(args: argparse.Namespace) -> None:
             f"the existing .app and its ~/Library/Application Support/{app_name}/ first."
         )
 
-    gamma_root = Path(prompt("Path to game root (G: drive)", str(Path.home() / "gamma"),
-                              args.gamma_root)).expanduser()
+    install_root = Path(prompt("Path to game root (G: drive)", str(Path.home() / "anomaly"),
+                              args.install_root)).expanduser()
 
     while True:
         exe_rel_path = prompt("Path to .exe, relative to game root", "sept/bin/AnomalyDX11.exe",
                                args.exe_rel_path).lstrip("/")
-        if (gamma_root / exe_rel_path).is_file():
+        if (install_root / exe_rel_path).is_file():
             break
-        log(f"  Not found: {gamma_root / exe_rel_path}")
+        log(f"  Not found: {install_root / exe_rel_path}")
         if args.force_exe:
             break
         if args.exe_rel_path is not None:
-            raise SetupError(f"Not found: {gamma_root / exe_rel_path} (pass --force-exe to use it anyway)")
+            raise SetupError(f"Not found: {install_root / exe_rel_path} (pass --force-exe to use it anyway)")
         if not confirm_yes_no("  Use anyway?", default_yes=False):
             continue
         break
     exe_win_path = "G:\\" + exe_rel_path.replace("/", "\\")
     exe_rel_dir = str(Path(exe_rel_path).parent)
-    exe_run_dir = gamma_root / exe_rel_dir
+    exe_run_dir = install_root / exe_rel_dir
 
     retina_mode = "N"
 
@@ -698,7 +698,7 @@ def run_setup(args: argparse.Namespace) -> None:
     log(f"  Engine (in app):{engine_dir}")
     log(f"  Prefix:         {wineprefix}")
     log(f"  Settings:       {config_file}")
-    log(f"  Game root:      {gamma_root}")
+    log(f"  Game root:      {install_root}")
     log("")
     if not args.yes:
         if not confirm_yes_no("Proceed?", default_yes=True):
@@ -749,7 +749,7 @@ def run_setup(args: argparse.Namespace) -> None:
     dosdevices.mkdir(parents=True, exist_ok=True)
     symlink_force(dosdevices / "z:", "/")
     symlink_force(dosdevices / "c:", "../drive_c")
-    symlink_force(dosdevices / "g:", gamma_root)
+    symlink_force(dosdevices / "g:", install_root)
 
     # wineboot -u (just above) already creates a REAL, fully-initialized
     # Windows profile at drive_c/users/crossover — Desktop, Documents,

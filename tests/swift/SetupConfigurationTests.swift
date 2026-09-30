@@ -82,9 +82,9 @@ final class SetupConfigurationTests {
         let temp = try makeTempDir("anomaly-drive-mapping")
         defer { try? FileManager.default.removeItem(at: temp) }
         let gamesRoot = temp.appendingPathComponent("Games", isDirectory: true)
-        let gammaRoot = gamesRoot.appendingPathComponent("Anomaly", isDirectory: true)
-        try FileManager.default.createDirectory(at: gammaRoot, withIntermediateDirectories: true)
-        let mo2 = gammaRoot.appendingPathComponent("ModOrganizer.exe")
+        let installRoot = gamesRoot.appendingPathComponent("Anomaly", isDirectory: true)
+        try FileManager.default.createDirectory(at: installRoot, withIntermediateDirectories: true)
+        let mo2 = installRoot.appendingPathComponent("ModOrganizer.exe")
         FileManager.default.createFile(atPath: mo2.path, contents: Data())
 
         let config = SetupConfiguration(manualModOrganizerPath: mo2.path)

@@ -1,10 +1,10 @@
 import Foundation
 
 struct AppSettings: Codable, Equatable {
-    var gammaPath: String?
+    var mo2Path: String?
 
-    init(gammaPath: String? = nil) {
-        self.gammaPath = gammaPath
+    init(mo2Path: String? = nil) {
+        self.mo2Path = mo2Path
     }
 }
 

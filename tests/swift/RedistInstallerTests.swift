@@ -19,7 +19,7 @@ final class RedistInstallerTests {
           "archivePath" : "/tmp/engine.tar.xz",
           "appName" : "stalker-anomaly",
           "appParent" : "/tmp/apps",
-          "gammaRoot" : "/tmp/Anomaly",
+          "installRoot" : "/tmp/Anomaly",
           "mo2Path" : "",
           "backend" : "dxmt",
           "runtimeMode" : "redist",
