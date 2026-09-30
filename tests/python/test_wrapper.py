@@ -123,6 +123,22 @@ class WrapperTests(unittest.TestCase):
             output = subprocess.check_output([str(helper), *explicit], env=env, text=True)
             self.assertEqual(output.splitlines(), [target, *expected])
 
+    def test_helper_passes_startup_arguments_without_filename_expansion(self):
+        app = self.assemble()
+        stubdir = self.root / "stubs-glob"
+        stubdir.mkdir()
+        for name, text in {"arch": '#!/bin/sh\nshift\nexec "$@"\n', "taskpolicy": '#!/bin/sh\nshift 4\nexec "$@"\n'}.items():
+            (stubdir / name).write_text(text)
+            (stubdir / name).chmod(0o755)
+        wine = app / "Contents/Resources/engine/bin/wine"
+        wine.write_text('#!/bin/sh\n[ "$1" = reg ] && exit 0\nprintf "%s\\n" "$@"\n')
+        (self.game / "present.txt").write_text("")
+        config = self.home / "Library/Application Support/Anomaly Test/app.env"
+        config.write_text(f"export EXE_PATH={shlex.quote(r'G:' + chr(92) + 'AnomalyDX11.exe')}\nexport EXE_RUN_DIR={shlex.quote(str(self.game))}\nexport DEFAULT_GAME_ARGS='-x * ?'\n")
+        env = dict(os.environ, PATH=str(stubdir) + ":/usr/bin:/bin")
+        output = subprocess.check_output([str(app / "Contents/MacOS/launcher")], env=env, text=True)
+        self.assertEqual(output.splitlines()[1:], ["-x", "*", "?"])
+
 
 if __name__ == "__main__":
     unittest.main()
