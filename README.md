@@ -1,6 +1,6 @@
 # Anomaly Setup Tool
 
-Run your existing **S.T.A.L.K.E.R. Anomaly** installation on macOS with a native setup wizard and launcher. **Setup Tool** creates a Wine wrapper using [anomaly-wine-engine](https://github.com/elseform/anomaly-wine-engine) and a [custom DXMT fork](https://github.com/elseform/dxmt/releases);
+Run your existing **S.T.A.L.K.E.R. Anomaly** installation on macOS with a native setup wizard and launcher. **Setup Tool** creates a Wine wrapper using [anomaly-wine-engine](https://github.com/elseform/anomaly-wine-engine) and a [custom DXMT fork](https://github.com/elseform/dxmt/releases).
 The wrapper’s **Launcher / Configurator** provides a native launcher for MO2-managed Anomaly installation.
 
 The tool does not install Anomaly or GAMMA. You need an installation already on your Mac.
