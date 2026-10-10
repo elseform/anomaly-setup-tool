@@ -64,7 +64,7 @@
   keep their settings.
 - The app's settings add **Frame Limiter** (`DXMT_FRAME_LIMITER`), which paces the game itself to
   Preferred Max Frame Rate or half the display's refresh rate. Both now sit in Frame Rate &
-  Sync. The limiter needs a DXMT release that includes it.
+  Sync. The limiter requires DXMT `gamma-2026.09.27.1` or later.
 - Debugging has a **Metal: Debug** group that gathers the Performance Overlay (moved from
   Display), the frame capture settings, and new **GPU Frame Capture** (`MTL_CAPTURE_ENABLED`),
   **Metal API Validation** (`MTL_DEBUG_LAYER`) and **Metal Shader Validation**
