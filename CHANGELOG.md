@@ -59,7 +59,7 @@
   Frame Limiter, Preferred Max Frame Rate and the Metal HUD Overlay stay off. Existing apps
   keep their settings.
 - Added **Frame Limiter** (`DXMT_FRAME_LIMITER`) with a preferred frame rate or half-refresh-rate
-  target. Requires a DXMT release that supports it.
+  target. Requires DXMT `gamma-2026.09.27.1` or later.
 - Added GPU frame capture, Metal API validation, and Metal shader validation controls, all off
   by default. Frame capture also requires a capture executable.
 - Reorganized settings into a resizable window with sidebar categories and changed-setting badges.
