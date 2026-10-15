@@ -15,12 +15,13 @@ INTERMEDIATE_BINARY="$INTERMEDIATES_DIR/Anomaly Setup Tool"
 ENGINE_BINARY="$RESOURCES_DIR/anomaly-setup-engine"
 INTERMEDIATE_ENGINE_BINARY="$INTERMEDIATES_DIR/anomaly-setup-engine"
 MODULE_CACHE_DIR="$BUILD_DIR/module-cache"
+FINGERPRINT="$INTERMEDIATES_DIR/build-fingerprint.json"
 MODE="${1:-build}"
 
 # build:  build dist/, sign it, and install it into ~/Applications
 # bundle: build and sign dist/ only (what test.sh uses; installs nothing)
 # install: copy the dist/ app that `bundle` (or test.sh) just built into
-#          ~/Applications without rebuilding; refuses a bundle older than the sources
+#          ~/Applications without rebuilding; requires matching inputs and toolchain
 # run:    build dist/ and run the app binary directly
 case "$MODE" in
   build|bundle|install|run|clean)
@@ -44,9 +45,8 @@ if [[ "$MODE" == "install" ]]; then
     printf 'No built app at %s; run ./test.sh or ./build.sh bundle first.\n' "$APP_DIR" >&2
     exit 1
   fi
-  newer_source="$(find "$ROOT_DIR/sources" "$ROOT_DIR/build.sh" -type f -newer "$BINARY" -print -quit)"
-  if [[ -n "$newer_source" ]]; then
-    printf 'The built app is older than %s; run ./test.sh or ./build.sh bundle first.\n' "$newer_source" >&2
+  if [[ ! -f "$FINGERPRINT" ]] || ! python3 "$ROOT_DIR/scripts/build-fingerprint.py" | cmp -s "$FINGERPRINT" -; then
+    printf 'The built app inputs or toolchain have changed; run ./test.sh or ./build.sh bundle first.\n' >&2
     exit 1
   fi
   mkdir -p "$INSTALL_DIR"
@@ -55,6 +55,10 @@ if [[ "$MODE" == "install" ]]; then
   printf '%s\n' "$INSTALL_DIR/Anomaly Setup Tool.app"
   exit 0
 fi
+
+CURRENT_FINGERPRINT="$(mktemp)"
+trap 'rm -f "$CURRENT_FINGERPRINT"' EXIT
+python3 "$ROOT_DIR/scripts/build-fingerprint.py" > "$CURRENT_FINGERPRINT"
 
 is_stale() {
   local output="$1"
@@ -77,6 +81,7 @@ is_stale() {
 # Assemble the bundle from scratch so files removed from the sources do not
 # linger in dist/ (and from there in the installed app). Compiled binaries are
 # kept in $INTERMEDIATES_DIR, outside the bundle.
+rm -f "$FINGERPRINT"
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$RESOURCES_DIR" "$MODULE_CACHE_DIR" "$INTERMEDIATES_DIR"
 
@@ -166,6 +171,18 @@ perl -0pi -e "s/APP_VERSION_PLACEHOLDER/$APP_VERSION/g" "$CONTENTS_DIR/Info.plis
 
 if [[ "$MODE" == "build" || "$MODE" == "bundle" ]]; then
   codesign --force --deep --sign - "$APP_DIR"
+fi
+
+if ! python3 "$ROOT_DIR/scripts/build-fingerprint.py" | cmp -s "$CURRENT_FINGERPRINT" -; then
+  printf 'Build inputs or toolchain changed during the build; rebuild before installing.\n' >&2
+  exit 1
+fi
+# Only signed bundles qualify for install without rebuilding. A failed build or
+# run-mode assembly must not inherit the fingerprint of an earlier bundle.
+if [[ "$MODE" == "build" || "$MODE" == "bundle" ]]; then
+  cp "$CURRENT_FINGERPRINT" "$FINGERPRINT"
+else
+  rm -f "$FINGERPRINT"
 fi
 
 if [[ "$MODE" == "build" ]]; then

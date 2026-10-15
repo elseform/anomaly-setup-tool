@@ -68,3 +68,11 @@ Building requires full Xcode with Icon Composer support, selected through `xcode
 ```
 
 `./build.sh` builds, ad-hoc signs, and installs the app into `~/Applications`. `./test.sh` runs automated tests and a build smoke check without installing. Run `./build.sh` after changes to keep the installed app current.
+
+`./build.sh install` installs the signed bundle produced by `./test.sh` or
+`./build.sh bundle` without compiling again. It requires the same source and
+packaging-script contents, file membership and permissions, Swift compiler,
+Xcode, SDK, and toolchain selection environment used for that build. Modification
+times do not affect this check. Older bundles without a fingerprint must be
+rebuilt once. Python 3 is required for this check; running `./test.sh` also
+requires `pytest` and `pytest-xdist` (`python3 -m pip install pytest pytest-xdist`).

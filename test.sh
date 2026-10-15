@@ -8,6 +8,9 @@ MODULE_CACHE_DIR="$BUILD_DIR/module-cache"
 
 mkdir -p "$BUILD_DIR" "$MODULE_CACHE_DIR"
 
+printf '==> Running build fingerprint tests\n'
+python3 -m pytest -n auto "$ROOT_DIR/tests/python/test_build_fingerprint.py"
+
 printf '==> Running Swift tests\n'
 swiftc \
   -target arm64-apple-macosx26.0 \
