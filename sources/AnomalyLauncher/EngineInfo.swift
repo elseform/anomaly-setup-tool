@@ -14,7 +14,7 @@ struct EngineInfo: Decodable, Equatable {
         var shortCommit: String? { commit.map { String($0.prefix(7)) } }
 
         var releaseURL: URL? {
-            tag.flatMap { URL(string: "https://github.com/elseform/dxmt/releases/tag/\($0)") }
+            tag.flatMap { URL(string: "https://github.com/elseform/dxmt-wine/releases/tag/\($0)") }
         }
     }
 

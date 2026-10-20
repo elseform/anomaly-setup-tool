@@ -25,7 +25,7 @@ struct LauncherTests {
         check(info.versionLabel == "CX26-W11-ANOMALY" && info.buildNumber == 19, "engine label and build")
         check(info.base?.wine == "11.16", "engine wine version")
         check(info.releaseURL?.absoluteString == "https://github.com/elseform/anomaly-wine-engine/releases/tag/engine-cx26-w11-anomaly-19", "engine release link")
-        check(info.dxmt?.releaseURL?.absoluteString == "https://github.com/elseform/dxmt/releases/tag/anomaly-2026.09.27.1", "dxmt release link")
+        check(info.dxmt?.releaseURL?.absoluteString == "https://github.com/elseform/dxmt-wine/releases/tag/anomaly-2026.09.27.1", "dxmt release link")
         check(info.dxmt?.tag == "anomaly-2026.09.27.1" && info.dxmt?.shortCommit == "fc8c947", "dxmt tag and short commit")
         check(try JSONDecoder().decode(EngineInfo.self, from: Data("{}".utf8)).dxmt == nil, "manifest without dxmt still decodes")
         let wrapper = root.appendingPathComponent("Test.app")
